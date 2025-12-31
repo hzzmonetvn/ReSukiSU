@@ -67,7 +67,9 @@ int __init kernelsu_init(void)
 
     ksu_feature_init();
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
     ksu_lsm_hook_init();
+#endif
 
     ksu_supercalls_init();
 

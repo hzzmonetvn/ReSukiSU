@@ -12,7 +12,9 @@ endif
 
 kernelsu-objs += throne_tracker.o
 kernelsu-objs += pkg_observer.o
+ifeq ($(shell test $(VERSION) -lt 6 || { test $(VERSION) -eq 6 && test $(PATCHLEVEL) -lt 8; } && echo y),y)
 kernelsu-objs += setuid_hook.o
+endif
 kernelsu-objs += lsm_hooks.o
 kernelsu-objs += kernel_compat.o
 kernelsu-objs += kernel_umount.o
@@ -25,11 +27,6 @@ kernelsu-objs += seccomp_cache.o
 kernelsu-objs += file_wrapper.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
-
-ifeq ($(CONFIG_KSU_MANUAL_SU), y)
-ccflags-y += -DCONFIG_KSU_MANUAL_SU
-kernelsu-objs += manual_su.o
-endif
 
 kernelsu-objs += selinux/selinux.o
 kernelsu-objs += selinux/sepolicy.o
@@ -63,7 +60,7 @@ endif
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
 
 ifeq ($(LOCAL_GIT_EXISTS),0)
-$(error You should use KernelSU as an git submodule instead of directly copy code)
+$(error You should use $(REPO_NAME) as an git submodule instead of directly copy code)
 endif
 
 define get_ksu_version_full
@@ -244,6 +241,90 @@ endif
 ## deny lkm build
 ifeq ($(CONFIG_KSU), m)
 $(error This branch not support LKM build, you should use main branch!)
+endif
+
+# manual hook check
+ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
+
+  ifeq ($(CONFIG_KSU_MANUAL_HOOK_AUTO_SETUID_HOOK), y)
+    $(info -- $(REPO_NAME)/manual_hook: You are using LSM hooks for setuid hooks.)
+    ifeq ($(VERSION),6)
+      ifeq ($(shell test $(PATCHLEVEL) -ge 8 && echo y),y)
+        $(info -- You can't use LSM hooks for kernel version higher than 6.8)
+        $(info -- You should turn off CONFIG_KSU_MANUAL_HOOK_AUTO_SETUID_HOOK and manually setresuid hook)
+        $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+        $(error You can't use LSM hooks when kernel version >= 6.8)
+      endif
+    endif
+  else
+    $(info -- $(REPO_NAME)/manual_hook: You are using manually setresuid hook for setuid hooks.)
+
+    ifeq ($(shell grep -q "ksu_handle_setresuid" $(srctree)/kernel/sys.c; echo $$?),0)
+      $(info -- $(REPO_NAME)/manual_hook: ksu_handle_setresuid found)
+    else
+      $(info -- You lost ksu_handle_setresuid hook in your kernel)
+      $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+      $(error You should integrate $(REPO_NAME) in your kernel.)
+    endif
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_execveat" $(srctree)/fs/exec.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_execveat found)
+  else
+    $(info -- You lost ksu_handle_execveat hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_faccessat" $(srctree)/fs/open.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_faccessat found)
+  else
+    $(info -- You lost ksu_handle_faccessat hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_stat" $(srctree)/fs/stat.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_stat found)
+  else
+    $(info -- You lost ksu_handle_stat hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_sys_reboot" $(srctree)/kernel/reboot.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_sys_reboot found)
+  else
+    $(info -- You lost ksu_handle_sys_reboot hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_sys_read" $(srctree)/fs/read_write.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_sys_read found)
+  else
+    $(info -- You lost ksu_handle_sys_read hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell grep -q "ksu_handle_input_handle_event" $(srctree)/drivers/input/input.c; echo $$?),0)
+    $(info -- $(REPO_NAME)/manual_hook: ksu_handle_input_handle_event found)
+  else
+    $(info -- You lost ksu_handle_input_handle_event hook in your kernel)
+    $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+    $(error You should integrate $(REPO_NAME) in your kernel.)
+  endif
+
+  ifeq ($(shell test $(VERSION) -lt 4 || { test $(VERSION) -eq 4 && test $(PATCHLEVEL) -lt 10; } && echo y),y)
+    ifeq ($(shell grep -q "is_ksu_transition" $(srctree)/security/selinux/hooks.c; echo $$?),0)
+      $(info -- $(REPO_NAME)/manual_hook: is_ksu_transition found)
+    else
+      $(info -- You lost is_ksu_transition hook in your kernel)
+      $(info -- Read: https://resukisu.github.io/guide/manual-hooks.html)
+      $(error You should integrate $(REPO_NAME) in your kernel.)
+    endif
+  endif
 endif
 
 # Keep a new line here!! Because someone may append config

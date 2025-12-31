@@ -16,6 +16,7 @@
 
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs.h>
+#include <linux/namei.h>
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 #include "allowlist.h"
@@ -33,6 +34,7 @@
 #include "kernel_umount.h"
 #include "sulog.h"
 
+extern u32 ksu_zygote_sid;
 #ifdef CONFIG_KSU_SUSFS
 static inline bool is_zygote_isolated_service_uid(uid_t uid)
 {
@@ -46,7 +48,6 @@ static inline bool is_zygote_normal_app_uid(uid_t uid)
     return (uid >= 10000 && uid < 19999);
 }
 
-extern u32 susfs_zygote_sid;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 extern void susfs_run_sus_path_loop(uid_t uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
@@ -81,8 +82,13 @@ static const struct ksu_feature_handler enhanced_security_handler = {
 extern void disable_seccomp(struct task_struct *tsk);
 
 #ifndef CONFIG_KSU_SUSFS
-int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
-{ // (new_euid)
+int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid) // (new_euid)
+{
+    // We only interest in process spwaned by zygote
+    if (!ksu_is_sid_equal(current_cred(), ksu_zygote_sid)) {
+        return 0;
+    }
+
     if (old_uid != new_uid)
         pr_info("handle_setresuid from %d to %d\n", old_uid, new_uid);
 
@@ -123,8 +129,7 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
         ksu_install_fd();
         spin_lock_irq(&current->sighand->siglock);
         ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
-#if !defined(CONFIG_KSU_SUSFS) &&                                              \
-    !defined(CONFIG_KSU_MANUAL_HOOK) // if tracepoint hook
+#ifndef CONFIG_KSU_MANUAL_HOOK // if tracepoint hook
         ksu_set_task_tracepoint_flag(current);
 #endif
         spin_unlock_irq(&current->sighand->siglock);
@@ -138,13 +143,11 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
             ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
             spin_unlock_irq(&current->sighand->siglock);
         }
-#if !defined(CONFIG_KSU_SUSFS) &&                                              \
-    !defined(CONFIG_KSU_MANUAL_HOOK) // if tracepoint hook
+#ifndef CONFIG_KSU_MANUAL_HOOK // if tracepoint hook
         ksu_set_task_tracepoint_flag(current);
 #endif
     }
-#if !defined(CONFIG_KSU_SUSFS) &&                                              \
-    !defined(CONFIG_KSU_MANUAL_HOOK) // if tracepoint hook
+#ifndef CONFIG_KSU_MANUAL_HOOK // if tracepoint hook
     else {
         ksu_clear_task_tracepoint_flag_if_needed(current);
     }
@@ -173,6 +176,11 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
 #else
 int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
 {
+    // We only interest in process spwaned by zygote
+    if (!ksu_is_sid_equal(current_cred(), ksu_zygote_sid)) {
+        return 0;
+    }
+
     // if old process is root, ignore it.
     if (old_uid != 0 && ksu_enhanced_security_enabled) {
         // disallow any non-ksu domain escalation from non-root to root!
@@ -195,11 +203,6 @@ int ksu_handle_setuid(uid_t new_uid, uid_t old_uid, uid_t euid)
                 return 0;
             }
         }
-        return 0;
-    }
-
-    // We only interest in process spwaned by zygote
-    if (!susfs_is_sid_equal(current_cred()->security, susfs_zygote_sid)) {
         return 0;
     }
 

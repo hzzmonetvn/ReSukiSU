@@ -5,8 +5,7 @@ config KSU
 	  default y
 	  help
 		Enable kernel-level root privileges on Android System.
-		To compile as a module, choose M here: the
-		module will be called kernelsu.
+		You can't build LKM in this branch
 
 config KSU_DEBUG
 	  bool "KernelSU debug mode"
@@ -23,12 +22,6 @@ config KSU_ALLOWLIST_WORKAROUND
 	  Enable session keyring init workaround for problematic devices.
 	  Useful for situations where the SU allowlist is not kept after a reboot
 
-config KSU_MANUAL_SU
-	bool "Use manual su"
-	depends on KSU
-	default y
-	help
-	  Use manual su and authorize the corresponding command line and application via fd
 
 config KSU_MULTI_MANAGER_SUPPORT
 	bool "Multi KernelSU manager support"
@@ -59,6 +52,9 @@ config KSU_MANUAL_HOOK_AUTO_SETUID_HOOK
 	depends on KSU_MANUAL_HOOK
 	default y
 	help
+	  THIS OPTION IS CAN NOT BE USED IN KERNEL_VERSION >= 6.8 DUE TO LSM CHANGES
+	  YOU MUST MANUALLY HOOK SETRESUID
+
 	  If turn off this option, you need checkout to kernel/sys.c 
 	  in SYSCALL_DEFINE3(setresuid, uid_t, ruid, uid_t, euid, uid_t, suid)
 	  add a ksu_handle_setresuid calls in there
