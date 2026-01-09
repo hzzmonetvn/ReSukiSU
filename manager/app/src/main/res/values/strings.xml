@@ -724,9 +724,9 @@ Important Note:\n
     <string name="group_contains_apps">Contains %d apps</string>
     <string name="settings_disable_sulog">Disable superuser logging</string>
     <string name="settings_disable_sulog_summary">Disable KernelSU superuser access logging</string>
-    <string name="meta_module_disabled">Metamodule has been disabled. Starting from the next system startup, all mounts from modules are unavailable</string>
-    <string name="meta_module_removed">Metamodule has been uninstalled. Starting from the next system startup, all mounts from modules are unavailable.</string>
-    <string name="no_meta_module_installed">No Metamodule has been installed. Starting from the next system startup, all mounts from modules are unavailable.</string>
+    <string name="meta_module_disabled">module not mounted, because metamodule disabled</string>
+    <string name="meta_module_removed">module not mounted, because metamodule being delete</string>
+    <string name="no_meta_module_installed">module not mounted, because metamodule not installed</string>
     <string name="network_offline">You are offline</string>
     <string name="network_retry">Retry</string>
     <string name="please_check_network">Please check your internet connection, and try again</string>

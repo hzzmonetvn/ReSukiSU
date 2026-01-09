@@ -713,9 +713,9 @@
     <string name="group_contains_apps">包含 %1$d 个应用</string>
     <string name="settings_disable_sulog"> 禁用超级用户日志 </string>
     <string name="settings_disable_sulog_summary">禁用 KernelSU 超级用户访问记录</string>
-    <string name="meta_module_disabled">元模块已禁用，重启后模块将不再挂载</string>
-    <string name="meta_module_removed">元模块已删除，重启后模块将不再挂载</string>
-    <string name="no_meta_module_installed">未安装元模块，现在不进行挂载</string>
+    <string name="meta_module_disabled">模块未挂载，因为元模块已禁用</string>
+    <string name="meta_module_removed">模块未挂载，因为元模块即将删除</string>
+    <string name="no_meta_module_installed">模块未挂载，因为未安装元模块</string>
     <string name="network_offline">您处于离线状态</string>
     <string name="network_retry">重试</string>
     <string name="please_check_network">请检查网络连接情况，然后稍后重试</string>
