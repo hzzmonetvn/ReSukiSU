@@ -67,7 +67,7 @@ jobs:
       run: |
         cd userspace/ksud/
         cargo ndk b -t ${{ inputs.target }} -r
-        upx --lzma target/*/release/ksud*
+        upx --lzma target/*/release/ksud
 
     - name: Upload ksud artifact
       uses: actions/upload-artifact@v6
