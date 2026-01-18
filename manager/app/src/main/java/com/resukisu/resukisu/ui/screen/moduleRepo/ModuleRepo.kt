@@ -31,7 +31,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material.icons.outlined.Download
@@ -72,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -93,8 +93,6 @@ import com.ramcosta.composedestinations.generated.destinations.OnlineModuleDetai
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.util.module.ReleaseAssetInfo
-import com.resukisu.resukisu.ui.util.module.ReleaseInfo
 import com.resukisu.resukisu.ui.activity.util.isNetworkAvailable
 import com.resukisu.resukisu.ui.component.ConfirmDialogHandle
 import com.resukisu.resukisu.ui.component.ConfirmResult
@@ -105,13 +103,18 @@ import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
 import com.resukisu.resukisu.ui.screen.FlashIt
 import com.resukisu.resukisu.ui.screen.LabelText
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
 import com.resukisu.resukisu.ui.util.LocalSnackbarHost
 import com.resukisu.resukisu.ui.util.download
+import com.resukisu.resukisu.ui.util.module.ReleaseAssetInfo
+import com.resukisu.resukisu.ui.util.module.ReleaseInfo
 import com.resukisu.resukisu.ui.viewmodel.ModuleRepoViewModel
 import com.resukisu.resukisu.ui.viewmodel.ModuleRepoViewModel.RepoModule
 import com.resukisu.resukisu.ui.viewmodel.formatFileSize
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -146,9 +149,15 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
         viewModel.sortStargazerCountFirst = prefs.getBoolean("module_repo_sort_star_first", false)
     }
 
+    val hazeState = if (ThemeConfig.backgroundImageLoaded) rememberHazeState() else null
+    val isLoading = viewModel.modules.isEmpty()
+
     Scaffold(
         topBar = {
             SearchAppBar(
+                modifier = if (isLoading) Modifier.background(MaterialTheme.colorScheme.surfaceContainer.copy(
+                    alpha = 0.8f
+                )) else Modifier,
                 searchText = viewModel.search,
                 onSearchTextChange = { viewModel.search = it },
                 dropdownContent = {
@@ -165,21 +174,24 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                     navigator.popBackStack()
                 },
                 scrollBehavior = scrollBehavior,
-                searchBarPlaceHolderText = stringResource(R.string.search_modules)
+                searchBarPlaceHolderText = stringResource(R.string.search_modules),
+                hazeState = hazeState
             )
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
         snackbarHost = { SnackbarHost(hostState = snackBarHost) }
     ) { innerPadding ->
-        val isLoading = viewModel.modules.isEmpty()
         var offline by remember { mutableStateOf(!isNetworkAvailable(context)) }
 
         if (isLoading) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
                 if (offline) {
@@ -229,6 +241,7 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
             }
         } else {
             PullToRefreshBox(
+                modifier = if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier,
                 state = pullRefreshState,
                 isRefreshing = viewModel.isRefreshing,
                 onRefresh = {
@@ -238,10 +251,9 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                     PullToRefreshDefaults.LoadingIndicator(
                         state = pullRefreshState,
                         isRefreshing = viewModel.isRefreshing,
-                        modifier = Modifier.align(Alignment.TopCenter),
+                        modifier = Modifier.padding(top = innerPadding.calculateTopPadding()).align(Alignment.TopCenter),
                     )
-                },
-                modifier = Modifier.padding(innerPadding)
+                }
             ) {
                 LazyColumn(
                     state = rememberLazyListState(),
@@ -256,8 +268,14 @@ fun ModuleRepoScreen(navigator: DestinationsNavigator) {
                         )
                     }
                 ) {
+                    item {
+                        Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
+                    }
                     items(viewModel.modules) { module ->
                         OnlineModuleItem(navigator, module, viewModel, confirmDialog, chooseDialog, currentModuleForChooseDialog)
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(innerPadding.calculateBottomPadding()))
                     }
                 }
             }
@@ -370,8 +388,8 @@ fun OnlineModuleItem(
     val context = LocalContext.current
 
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier = Modifier.clickable {
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
+        modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable {
             navigator.navigate(OnlineModuleDetailScreenDestination(module))
         },
         elevation = getCardElevation(),

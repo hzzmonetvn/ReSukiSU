@@ -2,19 +2,59 @@ package com.resukisu.resukisu.ui.screen
 
 import android.annotation.SuppressLint
 import androidx.annotation.StringRes
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,16 +80,28 @@ import com.ramcosta.composedestinations.generated.destinations.TemplateEditorScr
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.component.SwitchItem
 import com.resukisu.resukisu.ui.component.profile.AppProfileConfig
 import com.resukisu.resukisu.ui.component.profile.RootProfileConfig
 import com.resukisu.resukisu.ui.component.profile.TemplateConfig
+import com.resukisu.resukisu.ui.component.settings.SettingsBaseWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
 import com.resukisu.resukisu.ui.theme.CardConfig
-import com.resukisu.resukisu.ui.theme.getCardColors
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardElevation
-import com.resukisu.resukisu.ui.util.*
+import com.resukisu.resukisu.ui.util.LocalSnackbarHost
+import com.resukisu.resukisu.ui.util.forceStopApp
+import com.resukisu.resukisu.ui.util.getSepolicy
+import com.resukisu.resukisu.ui.util.launchApp
+import com.resukisu.resukisu.ui.util.restartApp
+import com.resukisu.resukisu.ui.util.setSepolicy
 import com.resukisu.resukisu.ui.viewmodel.SuperUserViewModel
 import com.resukisu.resukisu.ui.viewmodel.getTemplateInfoById
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 
 /**
@@ -65,7 +117,7 @@ fun AppProfileScreen(
 ) {
     val context = LocalContext.current
     val snackBarHost = LocalSnackbarHost.current
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
     val failToUpdateAppProfile = stringResource(R.string.failed_to_update_app_profile).format(appInfo.label)
     val failToUpdateSepolicy = stringResource(R.string.failed_to_update_sepolicy).format(appInfo.label)
@@ -82,11 +134,12 @@ fun AppProfileScreen(
 
     val colorScheme = MaterialTheme.colorScheme
     val cardColor = if (CardConfig.isCustomBackgroundEnabled) {
-        colorScheme.surfaceContainerLow
+        Color.Transparent
     } else {
-        colorScheme.background
+        colorScheme.surfaceContainer
     }
-    val cardAlpha = CardConfig.cardAlpha
+
+    val hazeState = if (CardConfig.isCustomBackgroundEnabled) rememberHazeState() else null
 
     Scaffold(
         topBar = {
@@ -94,21 +147,23 @@ fun AppProfileScreen(
                 title = appInfo.label,
                 packageName = packageName,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardColor.copy(alpha = cardAlpha),
-                    scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
+                    containerColor = cardColor,
+                    scrolledContainerColor = cardColor
                 ),
                 onBack = dropUnlessResumed { navigator.popBackStack() },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                hazeState = hazeState
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackBarHost) },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { paddingValues ->
         AppProfileInner(
-            modifier = Modifier
-                .padding(paddingValues)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .verticalScroll(rememberScrollState()),
+            modifier = (if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier)
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            topPadding = paddingValues.calculateTopPadding(),
             packageName = appInfo.packageName,
             appLabel = appInfo.label,
             appIcon = {
@@ -157,6 +212,7 @@ fun AppProfileScreen(
 @Composable
 private fun AppProfileInner(
     modifier: Modifier = Modifier,
+    topPadding: Dp,
     packageName: String,
     appLabel: String,
     appIcon: @Composable () -> Unit,
@@ -166,62 +222,65 @@ private fun AppProfileInner(
     onProfileChange: (Natives.Profile) -> Unit,
 ) {
     val isRootGranted = profile.allowSu
-    val cardColors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
 
-    MaterialTheme(
-        colorScheme = MaterialTheme.colorScheme.copy(
-            surface = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(modifier = modifier) {
+    LazyColumn(modifier = modifier) {
+        item {
+            Spacer(modifier = Modifier.height(topPadding))
+        }
+
+        item {
             ElevatedCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = cardColors,
+                colors = CardDefaults.cardColors().copy(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
                 elevation = getCardElevation(),
             ) {
                 AppMenuBox(packageName) {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = appLabel,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        },
-                        supportingContent = {
-                            Text(
-                                text = packageName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        leadingContent = appIcon,
-                    )
+                    SettingsBaseWidget(
+                        title = appLabel,
+                        description = packageName,
+                        iconPlaceholder = false,
+                        rowHeader = {
+                            appIcon()
+                        }
+                    ) {}
                 }
             }
+        }
 
+        item {
             ElevatedCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 shape = MaterialTheme.shapes.medium,
-                colors = cardColors,
+                colors = CardDefaults.cardColors().copy(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
                 elevation = getCardElevation(),
-            ) {
-                SwitchItem(
+            )
+            {
+                SettingsSwitchWidget(
                     icon = Icons.Filled.Security,
                     title = stringResource(id = R.string.superuser),
                     checked = isRootGranted,
                     onCheckedChange = { onProfileChange(profile.copy(allowSu = it)) },
                 )
             }
+        }
 
+        item {
             Crossfade(
                 targetState = isRootGranted,
                 label = "RootAccess"
-            ) { current ->
+            )
+            { current ->
                 Column(
                     modifier = Modifier.padding(bottom = 6.dp + 48.dp + 6.dp /* SnackBar height */)
                 ) {
@@ -242,7 +301,10 @@ private fun AppProfileInner(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             shape = MaterialTheme.shapes.medium,
-                            colors = cardColors,
+                            colors = CardDefaults.cardColors().copy(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
                             elevation = getCardElevation(),
                         ) {
                             ProfileBox(mode, true) {
@@ -269,7 +331,10 @@ private fun AppProfileInner(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 shape = MaterialTheme.shapes.medium,
-                                colors = cardColors,
+                                colors = CardDefaults.cardColors().copy(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ),
                                 elevation = getCardElevation(),
                             ) {
                                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -309,7 +374,10 @@ private fun AppProfileInner(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
                             shape = MaterialTheme.shapes.medium,
-                            colors = cardColors,
+                            colors = CardDefaults.cardColors().copy(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
                             elevation = getCardElevation(),
                         ) {
                             ProfileBox(mode, false) {
@@ -327,7 +395,10 @@ private fun AppProfileInner(
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
                                 shape = MaterialTheme.shapes.medium,
-                                colors = cardColors,
+                                colors = CardDefaults.cardColors().copy(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ),
                                 elevation = getCardElevation(),
                             ) {
                                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -354,28 +425,45 @@ private enum class Mode(@param:StringRes private val res: Int) {
         @Composable get() = stringResource(res)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TopBar(
     title: String,
     packageName: String,
     onBack: () -> Unit,
     colors: TopAppBarColors,
-    scrollBehavior: TopAppBarScrollBehavior? = null
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    hazeState: HazeState? = null
 ) {
-    TopAppBar(
+    val hazeStyle = if (ThemeConfig.backgroundImageLoaded) HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+            alpha = 0.8f
+        ),
+        tint = HazeTint(Color.Transparent)
+    ) else null
+
+    val collapsedFraction = scrollBehavior?.state?.collapsedFraction ?: 0f
+    val modifier = if (ThemeConfig.backgroundImageLoaded && hazeStyle != null && hazeState != null) {
+        Modifier.hazeEffect(hazeState) {
+            style = hazeStyle
+            noiseFactor = 0f
+            blurRadius = 30.dp
+            alpha = collapsedFraction
+        }
+    }
+    else Modifier
+
+    LargeFlexibleTopAppBar(
         title = {
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = packageName,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.alpha(0.8f)
-                )
-            }
+            Text(
+                text = title,
+            )
+        },
+        subtitle = {
+            Text(
+                text = packageName,
+                modifier = Modifier.alpha(0.8f)
+            )
         },
         colors = colors,
         navigationIcon = {
@@ -392,7 +480,7 @@ private fun TopBar(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
         scrollBehavior = scrollBehavior,
-        modifier = Modifier.shadow(
+        modifier = modifier.shadow(
             elevation = if ((scrollBehavior?.state?.overlappedFraction ?: 0f) > 0.01f)
                 4.dp else 0.dp,
         )
@@ -406,79 +494,61 @@ private fun ProfileBox(
     onModeChange: (Mode) -> Unit,
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        ListItem(
-            headlineContent = {
-                Text(
-                    text = stringResource(R.string.profile),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            supportingContent = {
-                Text(
-                    text = mode.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            },
-            leadingContent = {
-                Icon(
-                    imageVector = Icons.Filled.AccountCircle,
-                    contentDescription = null,
-                )
-            },
-        )
+        SettingsBaseWidget(
+            icon = Icons.Filled.AccountCircle,
+            title = stringResource(R.string.profile),
+            description = mode.text,
+        ) {}
 
         HorizontalDivider(
             thickness = Dp.Hairline,
         )
 
-        ListItem(
-            headlineContent = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                ) {
-                    FilterChip(
-                        selected = mode == Mode.Default,
-                        onClick = { onModeChange(Mode.Default) },
-                        label = {
-                            Text(
-                                text = stringResource(R.string.profile_default),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        shape = MaterialTheme.shapes.small
-                    )
-
-                    if (hasTemplate) {
-                        FilterChip(
-                            selected = mode == Mode.Template,
-                            onClick = { onModeChange(Mode.Template) },
-                            label = {
-                                Text(
-                                    text = stringResource(R.string.profile_template),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            },
-                            shape = MaterialTheme.shapes.small
-                        )
-                    }
-
-                    FilterChip(
-                        selected = mode == Mode.Custom,
-                        onClick = { onModeChange(Mode.Custom) },
-                        label = {
-                            Text(
-                                text = stringResource(R.string.profile_custom),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        },
-                        shape = MaterialTheme.shapes.small
-                    )
-                }
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         )
+        {
+            FilterChip(
+                selected = mode == Mode.Default,
+                onClick = { onModeChange(Mode.Default) },
+                label = {
+                    Text(
+                        text = stringResource(R.string.profile_default),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                shape = MaterialTheme.shapes.small
+            )
+
+            if (hasTemplate) {
+                FilterChip(
+                    selected = mode == Mode.Template,
+                    onClick = { onModeChange(Mode.Template) },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.profile_template),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    shape = MaterialTheme.shapes.small
+                )
+            }
+
+            FilterChip(
+                selected = mode == Mode.Custom,
+                onClick = { onModeChange(Mode.Custom) },
+                label = {
+                    Text(
+                        text = stringResource(R.string.profile_custom),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                shape = MaterialTheme.shapes.small
+            )
+        }
     }
 }
 
@@ -577,6 +647,7 @@ private fun AppProfilePreview() {
                     )
                 },
                 profile = profile,
+                topPadding = 0.dp,
                 onProfileChange = {
                     profile = it
                 },

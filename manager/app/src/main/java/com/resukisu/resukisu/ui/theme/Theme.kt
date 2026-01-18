@@ -7,13 +7,13 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -25,11 +25,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.zIndex
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
+import com.kyant.m3color.hct.Hct
+import com.kyant.m3color.scheme.SchemeTonalSpot
 import com.resukisu.resukisu.ui.theme.util.BackgroundTransformation
 import com.resukisu.resukisu.ui.theme.util.saveTransformedBackground
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -244,22 +247,21 @@ fun KernelSUTheme(
     ThemeInitializer(context = context, systemIsDark = systemIsDark)
 
     // 创建颜色方案
-    val colorScheme = createColorScheme(context, darkTheme, dynamicColor)
+    val colorScheme = createColorScheme(darkTheme, dynamicColor)
 
     // 系统栏样式
     SystemBarController(darkTheme)
 
     MaterialExpressiveTheme(
         colorScheme = colorScheme,
+        motionScheme = MotionScheme.expressive(),
         typography = Typography
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 背景层
             BackgroundLayer(darkTheme)
             // 内容层
-            Box(modifier = Modifier.fillMaxSize().zIndex(1f)) {
-                content()
-            }
+            content()
         }
     }
 }
@@ -316,11 +318,7 @@ private fun BackgroundLayer(darkTheme: Boolean) {
             .fillMaxSize()
             .zIndex(-2f)
             .background(
-                if (CardConfig.isCustomBackgroundEnabled) {
-                    MaterialTheme.colorScheme.surfaceContainerLow
-                } else {
-                    MaterialTheme.colorScheme.background
-                }
+                MaterialTheme.colorScheme.surfaceContainer
             )
     )
 
@@ -420,19 +418,59 @@ private fun BackgroundOverlay(darkTheme: Boolean) {
 
 @Composable
 private fun createColorScheme(
-    context: Context,
     darkTheme: Boolean,
     dynamicColor: Boolean
 ): ColorScheme {
     return when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            if (darkTheme) createDynamicDarkColorScheme(context)
-            else createDynamicLightColorScheme(context)
+            val hct = Hct.fromInt(colorResource(id = android.R.color.system_accent1_500).toArgb())
+            val scheme = SchemeTonalSpot(hct, darkTheme, 0.0)
+            MaterialTheme.colorScheme.copy(
+                primary = scheme.primary.toColor(),
+                onPrimary = scheme.onPrimary.toColor(),
+                primaryContainer = scheme.primaryContainer.toColor(),
+                onPrimaryContainer = scheme.onPrimaryContainer.toColor(),
+                inversePrimary = scheme.inversePrimary.toColor(),
+                secondary = scheme.secondary.toColor(),
+                onSecondary = scheme.onSecondary.toColor(),
+                secondaryContainer = scheme.secondaryContainer.toColor(),
+                onSecondaryContainer = scheme.onSecondaryContainer.toColor(),
+                tertiary = scheme.tertiary.toColor(),
+                onTertiary = scheme.onTertiary.toColor(),
+                tertiaryContainer = scheme.tertiaryContainer.toColor(),
+                onTertiaryContainer = scheme.onTertiaryContainer.toColor(),
+                background = scheme.background.toColor(),
+                onBackground = scheme.onBackground.toColor(),
+                surface = scheme.surface.toColor(),
+                onSurface = scheme.onSurface.toColor(),
+                surfaceVariant = scheme.surfaceVariant.toColor(),
+                onSurfaceVariant = scheme.onSurfaceVariant.toColor(),
+                surfaceTint = scheme.primary.toColor(),
+                inverseSurface = scheme.inverseSurface.toColor(),
+                inverseOnSurface = scheme.inverseOnSurface.toColor(),
+                error = scheme.error.toColor(),
+                onError = scheme.onError.toColor(),
+                errorContainer = scheme.errorContainer.toColor(),
+                onErrorContainer = scheme.onErrorContainer.toColor(),
+                outline = scheme.outline.toColor(),
+                outlineVariant = scheme.outlineVariant.toColor(),
+                scrim = scheme.scrim.toColor(),
+                surfaceBright = scheme.surfaceBright.toColor(),
+                surfaceDim = scheme.surfaceDim.toColor(),
+                surfaceContainer = scheme.surfaceContainer.toColor(),
+                surfaceContainerHigh = scheme.surfaceContainerHigh.toColor(),
+                surfaceContainerHighest = scheme.surfaceContainerHighest.toColor(),
+                surfaceContainerLow = scheme.surfaceContainerLow.toColor(),
+                surfaceContainerLowest = scheme.surfaceContainerLowest.toColor(),
+            )
         }
         darkTheme -> createDarkColorScheme()
         else -> createLightColorScheme()
     }
 }
+
+@Suppress("NOTHING_TO_INLINE")
+private inline fun Int.toColor(): Color = Color(this)
 
 @Composable
 private fun SystemBarController(darkMode: Boolean) {
@@ -455,30 +493,6 @@ private fun SystemBarController(darkMode: Boolean) {
             }
         )
     }
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@Composable
-private fun createDynamicDarkColorScheme(context: Context): ColorScheme {
-    val scheme = dynamicDarkColorScheme(context)
-    return scheme.copy(
-        background = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else scheme.background,
-        surface = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else scheme.surface,
-        onBackground = scheme.onBackground,
-        onSurface = scheme.onSurface
-    )
-}
-
-@RequiresApi(Build.VERSION_CODES.S)
-@Composable
-private fun createDynamicLightColorScheme(context: Context): ColorScheme {
-    val scheme = dynamicLightColorScheme(context)
-    return scheme.copy(
-        background = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else scheme.background,
-        surface = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else scheme.surface,
-        onBackground = scheme.onBackground,
-        onSurface = scheme.onSurface
-    )
 }
 
 @Composable

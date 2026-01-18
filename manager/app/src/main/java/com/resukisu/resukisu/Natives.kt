@@ -28,8 +28,6 @@ object Natives {
 
     const val MINIMAL_SUPPORTED_DYNAMIC_MANAGER = 13215
 
-    const val MINIMAL_SUPPORTED_UID_SCANNER = 13347
-
     const val MINIMAL_NEW_IOCTL_KERNEL = 13490
 
     const val ROOT_UID = 0
@@ -108,14 +106,6 @@ object Natives {
     external fun isKernelUmountEnabled(): Boolean
     external fun setKernelUmountEnabled(enabled: Boolean): Boolean
 
-    /**
-     * Enhanced security can be enabled/disabled.
-     *  0: disabled
-     *  1: enabled
-     *  negative : error
-     */
-    external fun isEnhancedSecurityEnabled(): Boolean
-    external fun setEnhancedSecurityEnabled(enabled: Boolean): Boolean
 
     /**
      * Su Log can be enabled/disabled.
@@ -160,12 +150,6 @@ object Natives {
      * @return ManagersList object containing active managers, or null if failed or not enabled
      */
     external fun getManagersList(): ManagersList?
-
-    /**
-     * Check if UID scanner is currently enabled
-     * @return true if UID scanner is enabled, false otherwise
-     */
-    external fun isUidScannerEnabled(): Boolean
 
     /**
      * Enable or disable UID scanner

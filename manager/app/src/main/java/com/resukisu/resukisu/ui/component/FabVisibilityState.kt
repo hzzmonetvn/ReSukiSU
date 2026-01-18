@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Modifier
 
 @SuppressLint("AutoboxingStateCreation")
 @Composable
@@ -49,10 +50,12 @@ fun rememberFabVisibilityState(listState: LazyListState): State<Boolean> {
 @Composable
 fun AnimatedFab(
     visible: Boolean,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
 
     AnimatedVisibility(
+        modifier = modifier,
         visible = visible,
         enter = fadeIn() + scaleIn(),
         exit = fadeOut() + scaleOut(targetScale = 0.8f)

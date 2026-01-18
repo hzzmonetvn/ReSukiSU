@@ -205,22 +205,6 @@ bool is_kernel_umount_enabled() {
     return value != 0;
 }
 
-bool set_enhanced_security_enabled(bool enabled) {
-    return set_feature(KSU_FEATURE_ENHANCED_SECURITY, enabled ? 1 : 0);
-}
-
-bool is_enhanced_security_enabled() {
-    uint64_t value = 0;
-    bool supported = false;
-    if (!get_feature(KSU_FEATURE_ENHANCED_SECURITY, &value, &supported)) {
-        return false;
-    }
-    if (!supported) {
-        return false;
-    }
-    return value != 0;
-}
-
 bool set_sulog_enabled(bool enabled) {
     return set_feature(KSU_FEATURE_SULOG, enabled ? 1 : 0);
 }
@@ -307,33 +291,4 @@ bool get_managers_list(struct manager_list_info *info)
 
 	*info = cmd.manager_info;
 	return true;
-}
-
-bool is_uid_scanner_enabled(void)
-{
-	bool status = false;
-
-	struct ksu_enable_uid_scanner_cmd cmd = {
-			.operation  = UID_SCANNER_OP_GET_STATUS,
-			.status_ptr = (__u64)(uintptr_t)&status
-	};
-
-	return ksuctl(KSU_IOCTL_ENABLE_UID_SCANNER, &cmd) == 0 != 0 && status;
-}
-
-bool set_uid_scanner_enabled(bool enabled)
-{
-	struct ksu_enable_uid_scanner_cmd cmd = {
-			.operation = UID_SCANNER_OP_TOGGLE,
-			.enabled   = enabled
-	};
-	return ksuctl(KSU_IOCTL_ENABLE_UID_SCANNER, &cmd);
-}
-
-bool clear_uid_scanner_environment(void)
-{
-	struct ksu_enable_uid_scanner_cmd cmd = {
-			.operation = UID_SCANNER_OP_CLEAR_ENV
-	};
-	return ksuctl(KSU_IOCTL_ENABLE_UID_SCANNER, &cmd);
 }

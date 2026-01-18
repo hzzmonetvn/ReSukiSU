@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
 
@@ -42,9 +43,13 @@ fun WarningCard(
     val cardColors = when (color) {
         null -> {
             CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
+                containerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                    alpha = CardConfig.cardAlpha
+                ),
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                disabledContainerColor = MaterialTheme.colorScheme.errorContainer,
+                disabledContainerColor = MaterialTheme.colorScheme.errorContainer.copy(
+                    alpha = CardConfig.cardAlpha
+                ),
                 disabledContentColor = MaterialTheme.colorScheme.onErrorContainer
             )
         }

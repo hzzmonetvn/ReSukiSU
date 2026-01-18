@@ -26,19 +26,20 @@ import com.resukisu.resukisu.ui.screen.main.KpmPage
 import com.resukisu.resukisu.ui.screen.main.ModulePage
 import com.resukisu.resukisu.ui.screen.main.SettingsPage
 import com.resukisu.resukisu.ui.screen.main.SuperUserPage
+import dev.chrisbanes.haze.HazeState
 
 enum class BottomBarDestination(
-    val direction: @Composable (navigator: DestinationsNavigator, bottomPadding: Dp) -> Unit,
+    val direction: @Composable (navigator: DestinationsNavigator, bottomPadding: Dp, hazeState : HazeState?) -> Unit,
     @param:StringRes val label: Int,
     val iconSelected: ImageVector,
     val iconNotSelected: ImageVector,
     val rootRequired: Boolean,
 ) {
-    Home({ navigator, bottomPadding -> HomePage(navigator, bottomPadding) }, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
-    Kpm({ navigator, bottomPadding -> KpmPage(bottomPadding) }, R.string.kpm_title, Icons.Filled.Archive, Icons.Outlined.Archive, true),
-    SuperUser({ navigator, bottomPadding -> SuperUserPage(navigator, bottomPadding) }, R.string.superuser, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings, true),
-    Module({ navigator, bottomPadding -> ModulePage(navigator, bottomPadding) }, R.string.module, Icons.Filled.Extension, Icons.Outlined.Extension, true),
-    Settings({ navigator, bottomPadding -> SettingsPage(navigator, bottomPadding) }, R.string.settings, Icons.Filled.Settings, Icons.Outlined.Settings, false);
+    Home({ navigator, bottomPadding, hazeState -> HomePage(navigator, bottomPadding, hazeState) }, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
+    Kpm({ navigator, bottomPadding, hazeState -> KpmPage(bottomPadding, hazeState) }, R.string.kpm_title, Icons.Filled.Archive, Icons.Outlined.Archive, true),
+    SuperUser({ navigator, bottomPadding, hazeState -> SuperUserPage(navigator, bottomPadding, hazeState) }, R.string.superuser, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings, true),
+    Module({ navigator, bottomPadding, hazeState -> ModulePage(navigator, bottomPadding, hazeState) }, R.string.module, Icons.Filled.Extension, Icons.Outlined.Extension, true),
+    Settings({ navigator, bottomPadding, hazeState -> SettingsPage(navigator, bottomPadding, hazeState) }, R.string.settings, Icons.Filled.Settings, Icons.Outlined.Settings, false);
 
     companion object {
         fun getPages(settings: MainActivity.SettingsState) : List<BottomBarDestination> {

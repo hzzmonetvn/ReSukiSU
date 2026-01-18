@@ -9,11 +9,26 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -24,12 +39,36 @@ import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -52,15 +91,21 @@ import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.getKernelVersion
 import com.resukisu.resukisu.ui.component.DialogHandle
-import com.resukisu.resukisu.ui.component.SuperDropdown
+import com.resukisu.resukisu.ui.component.settings.DropdownWidget
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
-import com.resukisu.resukisu.ui.theme.CardConfig.cardElevation
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
-import com.resukisu.resukisu.ui.util.*
+import com.resukisu.resukisu.ui.util.LkmSelection
+import com.resukisu.resukisu.ui.util.getAvailablePartitions
+import com.resukisu.resukisu.ui.util.getCurrentKmi
+import com.resukisu.resukisu.ui.util.getDefaultPartition
+import com.resukisu.resukisu.ui.util.getSlotSuffix
+import com.resukisu.resukisu.ui.util.getSupportedKmis
+import com.resukisu.resukisu.ui.util.isAbDevice
+import com.resukisu.resukisu.ui.util.rootAvailable
 import zako.zako.zako.zakoui.screen.kernelFlash.component.SlotSelectionDialog
 
 /**
@@ -327,7 +372,8 @@ fun InstallScreen(
                         val defaultIndex = partitions.indexOf(defaultPartition).takeIf { it >= 0 } ?: 0
                         if (!hasCustomSelected) partitionSelectionIndex = defaultIndex
 
-                        SuperDropdown(
+                        DropdownWidget(
+                            icon = Icons.Default.Edit,
                             items = displayPartitions,
                             selectedIndex = partitionSelectionIndex,
                             title = "${stringResource(R.string.install_select_partition)} (${suffix})",
@@ -335,14 +381,6 @@ fun InstallScreen(
                                 hasCustomSelected = true
                                 partitionSelectionIndex = index
                             },
-                            leftAction = {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(end = 16.dp),
-                                    contentDescription = null
-                                )
-                            }
                         )
                     }
                 }

@@ -67,6 +67,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -77,7 +78,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -94,6 +94,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -125,6 +126,8 @@ import com.resukisu.resukisu.ui.util.module.ModuleModify
 import com.resukisu.resukisu.ui.viewmodel.AppCategory
 import com.resukisu.resukisu.ui.viewmodel.SortType
 import com.resukisu.resukisu.ui.viewmodel.SuperUserViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -140,7 +143,7 @@ data class BottomSheetMenuItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp) {
+fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: HazeState?) {
     val context = LocalContext.current
     val viewModel = viewModel<SuperUserViewModel>(
         viewModelStoreOwner = context.applicationContext as KernelSUApplication
@@ -226,7 +229,6 @@ fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp) {
     }
 
     Scaffold(
-        modifier = Modifier.padding(bottom = bottomPadding),
         topBar = {
             SearchAppBar(
                 searchText = viewModel.search,
@@ -240,13 +242,16 @@ fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                searchBarPlaceHolderText = stringResource(R.string.search_apps)
+                searchBarPlaceHolderText = stringResource(R.string.search_apps),
+                hazeState = hazeState
             )
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { SnackbarHost(snackBarHostState) },
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         floatingActionButton = {
-            SuperUserFab(viewModel, filteredAndSortedAppGroups, listState, scope)
+            SuperUserFab(viewModel, filteredAndSortedAppGroups, listState, scope, bottomPadding)
         }
     ) { innerPadding ->
         SuperUserContent(
@@ -256,7 +261,9 @@ fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp) {
             listState = listState,
             scrollBehavior = scrollBehavior,
             navigator = navigator,
-            scope = scope
+            scope = scope,
+            bottomPadding = bottomPadding,
+            hazeState = hazeState
         )
 
         if (showBottomSheet) {
@@ -272,54 +279,16 @@ fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TopBarTitle(
-    selectedCategory: AppCategory,
-    appCounts: Map<AppCategory, Int>,
-    scrollBehavior: TopAppBarScrollBehavior
-) {
-    val isCollapsed = scrollBehavior.state.collapsedFraction >= 0.8f
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Text(stringResource(R.string.superuser))
-
-        if (selectedCategory != AppCategory.ALL && isCollapsed) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.padding(start = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = stringResource(selectedCategory.displayNameRes),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "(${appCounts[selectedCategory] ?: 0})",
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun SuperUserFab(
     viewModel: SuperUserViewModel,
     filteredAndSortedAppGroups: List<SuperUserViewModel.AppGroup>,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    bottomPadding: Dp
 ) {
     VerticalExpandableFab(
+        modifier = Modifier.padding(bottom = bottomPadding),
         menuItems = if (viewModel.showBatchActions && viewModel.selectedApps.isNotEmpty()) {
             FabMenuPresets.getBatchActionMenuItems(
                 onCancel = {
@@ -370,7 +339,9 @@ private fun SuperUserContent(
     listState: androidx.compose.foundation.lazy.LazyListState,
     scrollBehavior: SearchBarScrollBehavior,
     navigator: DestinationsNavigator,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    bottomPadding: Dp,
+    hazeState: HazeState?
 ) {
     val expandedGroups = remember { mutableStateOf(setOf<Int>()) }
     val density = LocalDensity.current
@@ -422,14 +393,15 @@ private fun SuperUserContent(
 
     PullToRefreshBox(
         state = pullRefreshState,
-        modifier = Modifier.padding(innerPadding),
         onRefresh = { scope.launch { viewModel.fetchAppList() } },
         isRefreshing = viewModel.isRefreshing,
+        modifier = (if (hazeState != null) Modifier.hazeSource(state = hazeState) else Modifier)
+            .fillMaxSize(),
         indicator = {
             PullToRefreshDefaults.LoadingIndicator(
+                modifier = Modifier.padding(top = innerPadding.calculateTopPadding()).align(Alignment.TopCenter),
                 state = pullRefreshState,
                 isRefreshing = viewModel.isRefreshing,
-                modifier = Modifier.align(Alignment.TopCenter),
             )
         },
     ) {
@@ -439,6 +411,9 @@ private fun SuperUserContent(
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
         ) {
+            item {
+                Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
+            }
             filteredAndSortedAppGroups.forEachIndexed { _, appGroup ->
                 item(key = "${appGroup.uid}-${appGroup.mainApp.packageName}") {
                     AppGroupItem(
@@ -525,6 +500,9 @@ private fun SuperUserContent(
                         )
                     }
                 }
+            }
+            item {
+                Spacer(modifier = Modifier.height(bottomPadding))
             }
         }
     }
@@ -960,6 +938,9 @@ private fun AppGroupItem(
                     )
                 }
             }
-        }
+        },
+        colors = ListItemDefaults.colors().copy(
+            containerColor = Color.Transparent
+        )
     )
 }

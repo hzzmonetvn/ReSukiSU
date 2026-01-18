@@ -1,22 +1,61 @@
 package com.resukisu.resukisu.ui.screen
 
 import android.content.Context
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.*
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -26,12 +65,23 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.ConfirmResult
-import com.resukisu.resukisu.ui.theme.CardConfig
+import com.resukisu.resukisu.ui.component.rememberConfirmDialog
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
-import com.resukisu.resukisu.ui.util.*
+import com.resukisu.resukisu.ui.util.LocalSnackbarHost
+import com.resukisu.resukisu.ui.util.addUmountPath
+import com.resukisu.resukisu.ui.util.applyUmountConfigToKernel
+import com.resukisu.resukisu.ui.util.clearCustomUmountPaths
+import com.resukisu.resukisu.ui.util.listUmountPaths
+import com.resukisu.resukisu.ui.util.removeUmountPath
+import com.resukisu.resukisu.ui.util.saveUmountConfig
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +110,25 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
     val pullToRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+    val hazeState = if (ThemeConfig.backgroundImageLoaded) rememberHazeState() else null
+
+    val hazeStyle = if (ThemeConfig.backgroundImageLoaded) HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+            alpha = 0.8f
+        ),
+        tint = HazeTint(Color.Transparent)
+    ) else null
+
+    val collapsedFraction = scrollBehavior.state.collapsedFraction
+    val modifier = if (ThemeConfig.backgroundImageLoaded && hazeStyle != null && hazeState != null) {
+        Modifier.hazeEffect(hazeState) {
+            style = hazeStyle
+            noiseFactor = 0f
+            blurRadius = 30.dp
+            alpha = collapsedFraction
+        }
+    }
+    else Modifier
 
     fun loadPaths() {
         scope.launch(Dispatchers.IO) {
@@ -81,6 +150,7 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
     Scaffold(
         topBar = {
             LargeFlexibleTopAppBar(
+                modifier = modifier,
                 title = { Text(stringResource(R.string.umount_path_manager)) },
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
@@ -89,9 +159,12 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(
-                        alpha = CardConfig.cardAlpha
-                    )
+                    containerColor =
+                        if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                        else MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor =
+                        if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                        else MaterialTheme.colorScheme.surfaceContainer,
                 )
             )
         },
@@ -102,51 +175,81 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
                 Icon(Icons.Filled.Add, contentDescription = null)
             }
         },
-        snackbarHost = { SnackbarHost(snackBarHost) }
+        snackbarHost = { SnackbarHost(snackBarHost) },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-        ) {
-            if (isLoading) { // 初次加载时动画
-                Box(
+        if (isLoading) { // 初次加载时动画
+            Box(
+                modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingIndicator()
+            }
+        }
+        else {
+            PullToRefreshBox(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    loadPaths()
+                    isRefreshing = false
+                },
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullToRefreshState,
+                        isRefreshing = isRefreshing,
+                        modifier = Modifier.padding(top = paddingValues.calculateTopPadding()).align(Alignment.TopCenter),
+                    )
+                },
+                modifier = if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier
+            ) {
+                LazyColumn(
                     modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentAlignment = Alignment.Center,
+                    contentPadding = PaddingValues(
+                        horizontal = SPACING_LARGE,
+                        vertical = SPACING_MEDIUM
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
                 ) {
-                    LoadingIndicator()
-                }
-            } else {
-                PullToRefreshBox(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = {
-                        loadPaths()
-                        isRefreshing = false
-                    },
-                    indicator = {
-                        PullToRefreshDefaults.LoadingIndicator(
-                            state = pullToRefreshState,
-                            isRefreshing = isRefreshing,
-                            modifier = Modifier.align(Alignment.TopCenter),
-                        )
-                    },
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            horizontal = SPACING_LARGE,
-                            vertical = SPACING_MEDIUM
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
-                    ) {
+                    item {
+                        Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding()))
+                    }
+
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp),
+                            colors = getCardColors(MaterialTheme.colorScheme.primaryContainer),
+                            elevation = getCardElevation()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Info,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(10.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = stringResource(R.string.umount_path_restart_notice),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+
+                    if (pathList.isEmpty()) {
                         item {
+                            Spacer(modifier = Modifier.height(15.dp))
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 10.dp),
-                                colors = getCardColors(MaterialTheme.colorScheme.primaryContainer),
                                 elevation = getCardElevation()
                             ) {
                                 Row(
@@ -157,58 +260,94 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
                                         imageVector = Icons.Filled.Info,
                                         contentDescription = null,
                                         modifier = Modifier.padding(10.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
                                     Text(
-                                        text = stringResource(R.string.umount_path_restart_notice),
+                                        text = stringResource(R.string.no_any_umount_path),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
                                     )
                                 }
                             }
                         }
+                    }
 
-                        if (pathList.isEmpty()) {
-                            item {
-                                Spacer(modifier = Modifier.height(15.dp))
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp),
-                                    elevation = getCardElevation()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(5.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Info,
-                                            contentDescription = null,
-                                            modifier = Modifier.padding(10.dp),
-                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.no_any_umount_path),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
+                    items(pathList, key = { it.path }) { entry ->
+                        UmountPathCard(
+                            entry = entry,
+                            onDelete = {
+                                scope.launch(Dispatchers.IO) {
+                                    val success = removeUmountPath(entry.path)
+                                    withContext(Dispatchers.Main) {
+                                        if (success) {
+                                            snackBarHost.showSnackbar(
+                                                context.getString(R.string.umount_path_removed)
+                                            )
+                                            loadPaths()
+                                        } else {
+                                            snackBarHost.showSnackbar(
+                                                context.getString(R.string.operation_failed)
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
+                        )
+                    }
 
-                        items(pathList, key = { it.path }) { entry ->
-                            UmountPathCard(
-                                entry = entry,
-                                onDelete = {
+                    item {
+                        Spacer(modifier = Modifier.height(SPACING_LARGE))
+                    }
+
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = SPACING_LARGE),
+                            horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
+                        ) {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        if (confirmDialog.awaitConfirm(
+                                                title = context.getString(R.string.confirm_action),
+                                                content = context.getString(R.string.confirm_clear_custom_paths)
+                                            ) == ConfirmResult.Confirmed
+                                        ) {
+                                            withContext(Dispatchers.IO) {
+                                                val success = clearCustomUmountPaths()
+                                                withContext(Dispatchers.Main) {
+                                                    if (success) {
+                                                        snackBarHost.showSnackbar(
+                                                            context.getString(R.string.custom_paths_cleared)
+                                                        )
+                                                        loadPaths()
+                                                    } else {
+                                                        snackBarHost.showSnackbar(
+                                                            context.getString(R.string.operation_failed)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Filled.DeleteForever, contentDescription = null)
+                                Spacer(modifier = Modifier.width(SPACING_MEDIUM))
+                                Text(stringResource(R.string.clear_custom_paths))
+                            }
+
+                            Button(
+                                onClick = {
                                     scope.launch(Dispatchers.IO) {
-                                        val success = removeUmountPath(entry.path)
+                                        val success = applyUmountConfigToKernel()
                                         withContext(Dispatchers.Main) {
                                             if (success) {
                                                 snackBarHost.showSnackbar(
-                                                    context.getString(R.string.umount_path_removed)
+                                                    context.getString(R.string.config_applied)
                                                 )
-                                                loadPaths()
                                             } else {
                                                 snackBarHost.showSnackbar(
                                                     context.getString(R.string.operation_failed)
@@ -216,77 +355,12 @@ fun UmountManagerScreen(navigator: DestinationsNavigator) {
                                             }
                                         }
                                     }
-                                }
-                            )
-                        }
-
-                        item {
-                            Spacer(modifier = Modifier.height(SPACING_LARGE))
-                        }
-
-                        item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = SPACING_LARGE),
-                                horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
+                                },
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Button(
-                                    onClick = {
-                                        scope.launch {
-                                            if (confirmDialog.awaitConfirm(
-                                                    title = context.getString(R.string.confirm_action),
-                                                    content = context.getString(R.string.confirm_clear_custom_paths)
-                                                ) == ConfirmResult.Confirmed
-                                            ) {
-                                                withContext(Dispatchers.IO) {
-                                                    val success = clearCustomUmountPaths()
-                                                    withContext(Dispatchers.Main) {
-                                                        if (success) {
-                                                            snackBarHost.showSnackbar(
-                                                                context.getString(R.string.custom_paths_cleared)
-                                                            )
-                                                            loadPaths()
-                                                        } else {
-                                                            snackBarHost.showSnackbar(
-                                                                context.getString(R.string.operation_failed)
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Filled.DeleteForever, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(SPACING_MEDIUM))
-                                    Text(stringResource(R.string.clear_custom_paths))
-                                }
-
-                                Button(
-                                    onClick = {
-                                        scope.launch(Dispatchers.IO) {
-                                            val success = applyUmountConfigToKernel()
-                                            withContext(Dispatchers.Main) {
-                                                if (success) {
-                                                    snackBarHost.showSnackbar(
-                                                        context.getString(R.string.config_applied)
-                                                    )
-                                                } else {
-                                                    snackBarHost.showSnackbar(
-                                                        context.getString(R.string.operation_failed)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(Icons.Filled.Check, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(SPACING_MEDIUM))
-                                    Text(stringResource(R.string.apply_config))
-                                }
+                                Icon(Icons.Filled.Check, contentDescription = null)
+                                Spacer(modifier = Modifier.width(SPACING_MEDIUM))
+                                Text(stringResource(R.string.apply_config))
                             }
                         }
                     }

@@ -311,14 +311,6 @@ NativeBridge(setKernelUmountEnabled, jboolean, jboolean enabled) {
     return set_kernel_umount_enabled(enabled);
 }
 
-NativeBridgeNP(isEnhancedSecurityEnabled, jboolean) {
-    return is_enhanced_security_enabled();
-}
-
-NativeBridge(setEnhancedSecurityEnabled, jboolean, jboolean enabled) {
-    return set_enhanced_security_enabled(enabled);
-}
-
 NativeBridgeNP(isSuLogEnabled, jboolean) {
     return is_sulog_enabled();
 }
@@ -418,16 +410,4 @@ NativeBridgeNP(getManagersList, jobject) {
 
 	LogDebug("getManagersList: count=%d", managerListInfo.count);
 	return obj;
-}
-
-NativeBridgeNP(isUidScannerEnabled, jboolean) {
-	return is_uid_scanner_enabled();
-}
-
-NativeBridge(setUidScannerEnabled, jboolean, jboolean enabled) {
-	return set_uid_scanner_enabled(enabled);
-}
-
-NativeBridgeNP(clearUidScannerEnvironment, jboolean) {
-	return clear_uid_scanner_environment();
 }

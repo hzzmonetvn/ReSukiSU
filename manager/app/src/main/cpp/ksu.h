@@ -36,10 +36,6 @@ void get_full_version(char* buff);
 #define DYNAMIC_MANAGER_OP_GET 1
 #define DYNAMIC_MANAGER_OP_CLEAR 2
 
-#define UID_SCANNER_OP_GET_STATUS 0
-#define UID_SCANNER_OP_TOGGLE 1
-#define UID_SCANNER_OP_CLEAR_ENV 2
-
 struct dynamic_manager_user_config {
 	unsigned int operation;
 	unsigned int size;
@@ -119,17 +115,10 @@ bool clear_dynamic_manager();
 
 bool get_managers_list(struct manager_list_info* info);
 
-bool is_uid_scanner_enabled();
-
-bool set_uid_scanner_enabled(bool enabled);
-
-bool clear_uid_scanner_environment();
-
 // Feature IDs
 enum ksu_feature_id {
     KSU_FEATURE_SU_COMPAT = 0,
     KSU_FEATURE_KERNEL_UMOUNT = 1,
-    KSU_FEATURE_ENHANCED_SECURITY = 2,
 	KSU_FEATURE_SULOG = 3,
 };
 
@@ -203,10 +192,6 @@ bool is_su_enabled();
 // Kernel umount
 bool set_kernel_umount_enabled(bool enabled);
 bool is_kernel_umount_enabled();
-
-// Enhanced security
-bool set_enhanced_security_enabled(bool enabled);
-bool is_enhanced_security_enabled();
 
 // Su log
 bool set_sulog_enabled(bool enabled);

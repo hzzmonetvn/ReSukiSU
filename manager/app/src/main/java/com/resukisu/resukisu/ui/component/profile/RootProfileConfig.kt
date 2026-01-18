@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +47,7 @@ import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.profile.Capabilities
 import com.resukisu.resukisu.profile.Groups
-import com.resukisu.resukisu.ui.component.SuperDropdown
+import com.resukisu.resukisu.ui.component.settings.DropdownWidget
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
 import com.resukisu.resukisu.ui.util.isSepolicyValid
 
@@ -188,7 +189,11 @@ fun GroupsPanel(selected: List<Groups>, closeSelection: (selection: Set<Groups>)
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(16.dp),
+        colors = CardDefaults.cardColors().copy(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
 
         Column(
@@ -260,9 +265,12 @@ fun CapsPanel(
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(16.dp),
+        colors = CardDefaults.cardColors().copy(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -276,7 +284,7 @@ fun CapsPanel(
                 selected.forEach { group ->
                     AssistChip(
                         modifier = Modifier.padding(3.dp),
-                        onClick = { /*TODO*/ },
+                        onClick = {},
                         label = { Text(group.display) })
                 }
             }
@@ -287,53 +295,51 @@ fun CapsPanel(
 
 @Composable
 private fun UidPanel(uid: Int, label: String, onUidChange: (Int) -> Unit) {
+    var isError by remember {
+        mutableStateOf(false)
+    }
+    var lastValidUid by remember {
+        mutableIntStateOf(uid)
+    }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    ListItem(headlineContent = {
-        var isError by remember {
-            mutableStateOf(false)
-        }
-        var lastValidUid by remember {
-            mutableIntStateOf(uid)
-        }
-        val keyboardController = LocalSoftwareKeyboardController.current
-
-        OutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(label) },
-            value = uid.toString(),
-            isError = isError,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(onDone = {
-                keyboardController?.hide()
-            }),
-            onValueChange = {
-                if (it.isEmpty()) {
-                    onUidChange(0)
-                    return@OutlinedTextField
-                }
-                val valid = isTextValidUid(it)
-
-                val targetUid = if (valid) it.toInt() else lastValidUid
-                if (valid) {
-                    lastValidUid = it.toInt()
-                }
-
-                onUidChange(targetUid)
-
-                isError = !valid
+    OutlinedTextField(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        label = { Text(label) },
+        value = uid.toString(),
+        isError = isError,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Number,
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(onDone = {
+            keyboardController?.hide()
+        }),
+        onValueChange = {
+            if (it.isEmpty()) {
+                onUidChange(0)
+                return@OutlinedTextField
             }
-        )
-    })
+            val valid = isTextValidUid(it)
+
+            val targetUid = if (valid) it.toInt() else lastValidUid
+            if (valid) {
+                lastValidUid = it.toInt()
+            }
+
+            onUidChange(targetUid)
+
+            isError = !valid
+        }
+    )
 }
 
 @Composable
 fun MountNameSpacePanel(
     profile: Natives.Profile, onMntNamespaceChange: (namespaceType: Int) -> Unit
 ) {
-    SuperDropdown(
+    DropdownWidget(
+        iconPlaceholder = false,
         title = stringResource(id = R.string.profile_namespace), items = listOf(
             stringResource(id = R.string.profile_namespace_inherited),
             stringResource(id = R.string.profile_namespace_global),
@@ -412,25 +418,24 @@ private fun SELinuxPanel(
         )
     }
 
-    ListItem(headlineContent = {
-        OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    editSELinuxDialog.show()
-                },
-            enabled = false,
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-            label = { Text(text = stringResource(R.string.profile_selinux_context)) },
-            value = profile.context,
-            onValueChange = { }
-        )
-    })
+    OutlinedTextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable {
+                editSELinuxDialog.show()
+            },
+        enabled = false,
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        label = { Text(text = stringResource(R.string.profile_selinux_context)) },
+        value = profile.context,
+        onValueChange = { }
+    )
 }
 
 @Preview

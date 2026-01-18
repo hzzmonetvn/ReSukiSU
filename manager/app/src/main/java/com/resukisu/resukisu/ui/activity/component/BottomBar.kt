@@ -20,23 +20,27 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.resukisu.resukisu.ui.MainActivity
 import com.resukisu.resukisu.ui.screen.BottomBarDestination
-import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.util.LocalHandlePageChange
 import com.resukisu.resukisu.ui.util.LocalSelectedPage
 import com.resukisu.resukisu.ui.util.getKpmModuleCount
 import com.resukisu.resukisu.ui.util.getModuleCount
 import com.resukisu.resukisu.ui.util.getSuperuserCount
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -44,8 +48,7 @@ import kotlinx.coroutines.withContext
 @SuppressLint("ContextCastToActivity")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun BottomBar(destinations: List<BottomBarDestination>) {
-    val cardColor = MaterialTheme.colorScheme.surfaceContainer
+fun BottomBar(destinations: List<BottomBarDestination>, hazeState: HazeState?) {
     val activity = LocalContext.current as MainActivity
 
     // 是否隐藏 badge
@@ -74,15 +77,28 @@ fun BottomBar(destinations: List<BottomBarDestination>) {
         }
     }
 
-    FlexibleBottomAppBar(
-        modifier = Modifier.windowInsetsPadding(
-            WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
+    val hazeStyle = if (ThemeConfig.backgroundImageLoaded) HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+            alpha = 0.8f
         ),
-        expandedHeight = 72.dp,
-        containerColor = TopAppBarDefaults.topAppBarColors(
-            containerColor = cardColor.copy(alpha = cardAlpha),
-            scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
-        ).containerColor
+        tint = HazeTint(Color.Transparent)
+    ) else null
+
+    var modifier = Modifier.windowInsetsPadding(
+        WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
+    )
+
+    if (ThemeConfig.backgroundImageLoaded && hazeStyle != null && hazeState != null)
+        modifier = modifier.hazeEffect(hazeState) {
+            style = hazeStyle
+            blurRadius = 30.dp
+            noiseFactor = 0f
+        }
+
+    FlexibleBottomAppBar(
+        modifier = modifier,
+        containerColor = if (ThemeConfig.backgroundImageLoaded) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         destinations.forEachIndexed { index, destination ->
             val pageSelected = index == page

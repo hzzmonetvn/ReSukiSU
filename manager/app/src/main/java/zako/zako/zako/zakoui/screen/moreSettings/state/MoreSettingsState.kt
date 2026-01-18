@@ -40,7 +40,6 @@ class MoreSettingsState(
     var currentAppLocale by mutableStateOf(LocaleHelper.getCurrentAppLocale(context))
 
     // 对话框显示状态
-    var showThemeModeDialog by mutableStateOf(false)
     var showThemeColorDialog by mutableStateOf(false)
     var showDpiConfirmDialog by mutableStateOf(false)
 

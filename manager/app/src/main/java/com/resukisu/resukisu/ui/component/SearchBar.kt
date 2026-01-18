@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.rememberSplineBasedDecay
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -49,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.onSizeChanged
@@ -60,6 +63,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.ui.theme.CardConfig
+import com.resukisu.resukisu.ui.theme.ThemeConfig
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -152,13 +160,15 @@ private class PinnedScrollBehavior(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchAppBar(
+    modifier: Modifier = Modifier,
     searchText: String,
     onSearchTextChange: (String) -> Unit,
     onBackClick: (() -> Unit)? = null,
     dropdownContent: @Composable (() -> Unit)? = null,
     navigationContent: @Composable (() -> Unit)? = null,
     scrollBehavior: SearchBarScrollBehavior? = null,
-    searchBarPlaceHolderText: String
+    searchBarPlaceHolderText: String,
+    hazeState: HazeState? = null
 ) {
     val textFieldState = rememberTextFieldState(initialText = searchText)
     val searchBarState = rememberSearchBarState()
@@ -184,7 +194,6 @@ fun SearchAppBar(
         isExpanded = false
     }
 
-    val cardAlpha = CardConfig.cardAlpha
     LaunchedEffect(textFieldState.text) {
         onSearchTextChange(textFieldState.text.toString())
     }
@@ -193,23 +202,34 @@ fun SearchAppBar(
         onDispose { keyboardController?.hide() }
     }
 
-    val colorScheme = MaterialTheme.colorScheme
-    val cardColor =
-        if (CardConfig.isCustomBackgroundEnabled)
-            colorScheme.surfaceContainerLow
-        else
-            colorScheme.background
+    var modifier = modifier.fillMaxWidth()
+    val surfaceContainerHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+
+    if (hazeState != null) modifier = modifier.hazeEffect(hazeState) {
+        style = HazeStyle(
+            backgroundColor = surfaceContainerHigh.copy(
+                alpha = 0.8f
+            ),
+            tint = HazeTint(Color.Transparent)
+        )
+        blurRadius = 30.dp
+        noiseFactor = 0f
+    }
 
     AppBarWithSearch(
+        modifier = modifier.background(
+            if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+            else MaterialTheme.colorScheme.surfaceContainer
+        ),
         state = searchBarState,
         inputField = {
             SearchBarDefaults.InputField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
-                    .padding(bottom = 5.dp)
+                    .padding(bottom = 4.dp)
                     .clip(SearchBarDefaults.inputFieldShape)
-                    .height(53.dp), // box padding + icon padding + icon size
+                    .height(52.dp), // box padding + icon padding + icon size
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = { text ->
@@ -219,8 +239,12 @@ fun SearchAppBar(
                     onSearchTextChange(text)
                 },
                 colors = SearchBarDefaults.inputFieldColors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+                        alpha = CardConfig.cardAlpha
+                    ),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(
+                        alpha = CardConfig.cardAlpha
+                    ),
                 ),
                 placeholder = {
                     Text(
@@ -316,15 +340,15 @@ fun SearchAppBar(
             dropdownContent?.invoke()
         },
         scrollBehavior = scrollBehavior,
+        windowInsets = WindowInsets.statusBars,
         colors = SearchBarDefaults.appBarWithSearchColors(
             searchBarColors = SearchBarDefaults.colors(
-                containerColor = cardColor.copy(alpha = 0f)
+                containerColor = Color.Transparent
             ),
-            scrolledSearchBarContainerColor = cardColor.copy(alpha = 0f),
-            appBarContainerColor = cardColor.copy(alpha = 0f),
-            scrolledAppBarContainerColor = cardColor.copy(alpha = 0f)
+            scrolledSearchBarContainerColor = Color.Transparent,
+            appBarContainerColor = Color.Transparent,
+            scrolledAppBarContainerColor = Color.Transparent,
         ),
-        modifier = Modifier.fillMaxWidth()
     )
 }
 
@@ -335,6 +359,7 @@ private fun SearchAppBarPreview() {
     SearchAppBar(
         searchText = "",
         onSearchTextChange = {},
-        searchBarPlaceHolderText = ""
+        searchBarPlaceHolderText = "",
+        hazeState = null
     )
 }

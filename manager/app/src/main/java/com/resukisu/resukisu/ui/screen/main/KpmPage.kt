@@ -33,8 +33,11 @@ import com.resukisu.resukisu.R
 import java.io.FileInputStream
 import java.net.*
 import android.app.Activity
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 
 /**
  * @author ShirkNeko, liankong
@@ -42,7 +45,7 @@ import androidx.compose.ui.unit.Dp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun KpmPage(bottomPadding: Dp) {
+fun KpmPage(bottomPadding: Dp, hazeState: HazeState?) {
     val viewModel: KpmViewModel = viewModel<KpmViewModel>()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -257,7 +260,6 @@ fun KpmPage(bottomPadding: Dp) {
     var isNoticeClosed by remember { mutableStateOf(sharedPreferences.getBoolean("is_notice_closed", false)) }
 
     Scaffold(
-        modifier = Modifier.padding(bottom = bottomPadding),
         topBar = {
             SearchAppBar(
                 searchText = viewModel.search,
@@ -273,11 +275,15 @@ fun KpmPage(bottomPadding: Dp) {
                         )
                     }
                 },
-                searchBarPlaceHolderText = stringResource(R.string.search_modules)
+                searchBarPlaceHolderText = stringResource(R.string.search_modules),
+                hazeState = hazeState
             )
         },
         floatingActionButton = {
-            AnimatedFab(visible = fabVisible) {
+            AnimatedFab(
+                visible = fabVisible,
+                modifier = Modifier.padding(bottom = bottomPadding)
+            ) {
                 FloatingActionButton(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -297,12 +303,18 @@ fun KpmPage(bottomPadding: Dp) {
                 )
             }
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
         snackbarHost = { SnackbarHost(snackBarHost) }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+    ) { innerPadding ->
+        Column(
+            modifier = (if (hazeState != null) Modifier.hazeSource(state = hazeState) else Modifier)
+                .fillMaxSize(),
+        ) {
+            Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
             if (!isNoticeClosed) {
                 Card(
                     modifier = Modifier
@@ -403,6 +415,10 @@ fun KpmPage(bottomPadding: Dp) {
                                 viewModel.loadModuleDetail(module.id)
                             }
                         )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(bottomPadding))
                     }
                 }
             }

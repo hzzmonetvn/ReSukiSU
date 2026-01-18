@@ -84,12 +84,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -148,6 +150,8 @@ import com.resukisu.resukisu.ui.viewmodel.ModuleViewModel
 import com.resukisu.resukisu.ui.webui.WebUIActivity
 import com.resukisu.resukisu.ui.webui.WebUIXActivity
 import com.topjohnwu.superuser.io.SuFile
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,7 +165,7 @@ import java.util.concurrent.TimeUnit
 @SuppressLint("ResourceType", "AutoboxingStateCreation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
+fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: HazeState?) {
     val context = LocalContext.current
     val viewModel = viewModel<ModuleViewModel>(
         viewModelStoreOwner = context.applicationContext as KernelSUApplication
@@ -284,7 +288,6 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
     ) { viewModel.fetchModuleList() }
 
     Scaffold(
-        modifier = Modifier.padding(bottom = bottomPadding),
         topBar = {
             SearchAppBar(
                 searchText = viewModel.search,
@@ -310,11 +313,15 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                searchBarPlaceHolderText = stringResource(R.string.search_modules)
+                searchBarPlaceHolderText = stringResource(R.string.search_modules),
+                hazeState = hazeState
             )
         },
         floatingActionButton = {
-            AnimatedFab(visible = !hideInstallButton && fabVisible) {
+            AnimatedFab(
+                visible = !hideInstallButton && fabVisible,
+                modifier = Modifier.padding(bottom = bottomPadding)
+            ) {
                 FloatingActionButton(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -335,6 +342,8 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                 )
             }
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         ),
@@ -373,7 +382,6 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                     viewModel = viewModel,
                     listState = listState,
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                    boxModifier = Modifier.padding(innerPadding),
                     onInstallModule = {
                         navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(it)))
                     },
@@ -438,7 +446,10 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                         }
                     },
                     context = context,
-                    snackBarHost = snackBarHost
+                    snackBarHost = snackBarHost,
+                    bottomPadding = bottomPadding,
+                    topPadding = innerPadding.calculateTopPadding(),
+                    hazeState = hazeState
                 )
             }
         }
@@ -586,44 +597,52 @@ private fun ModuleBottomSheetContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MetaModuleWarningCard(
-    viewModel: ModuleViewModel
-) {
+var showMetamoduleWarning by mutableStateOf(true)
+
+private fun getMetaModuleWarningText(
+    viewModel: ModuleViewModel,
+    context: Context
+) : String? {
+    if (!showMetamoduleWarning) return null
+
     val hasSystemModule = viewModel.moduleList.any { module ->
-        SuFile.open("/data/adb/modules/${module.dirId}/system").exists()
+        SuFile.open("/data/adb/modules/${module.id}/system").exists()
     }
+
+    if (!hasSystemModule) return null
 
     val metaProp = SuFile.open("/data/adb/metamodule/module.prop").exists()
     val metaRemoved = SuFile.open("/data/adb/metamodule/remove").exists()
     val metaDisabled = SuFile.open("/data/adb/metamodule/disable").exists()
 
-    val warningText = when {
-        hasSystemModule && !metaProp ->
-            stringResource(R.string.no_meta_module_installed)
+    return when {
+        !metaProp ->
+            context.getString(R.string.no_meta_module_installed)
 
-        metaProp && metaRemoved && hasSystemModule ->
-            stringResource(R.string.meta_module_removed)
+        metaProp && metaRemoved ->
+            context.getString(R.string.meta_module_removed)
 
-        metaProp && metaDisabled && hasSystemModule ->
-            stringResource(R.string.meta_module_disabled)
+        metaProp && metaDisabled ->
+            context.getString(R.string.meta_module_disabled)
 
         else -> null
     }
+}
 
-    if (warningText == null) return
-    var show by remember { mutableStateOf(true) }
-
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MetaModuleWarningCard(
+    text: String
+) {
     AnimatedVisibility(
-        visible = show,
+        visible = showMetamoduleWarning,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically()
     ) {
         WarningCard(
-            message = warningText,
+            message = text,
             onClose = {
-                show = false
+                showMetamoduleWarning = false
             }
         )
 
@@ -643,7 +662,10 @@ private fun ModuleList(
     onUpdateModule: (Uri) -> Unit,
     onClickModule: (id: String, name: String, hasWebUi: Boolean) -> Unit,
     context: Context,
-    snackBarHost: SnackbarHostState
+    snackBarHost: SnackbarHostState,
+    bottomPadding : Dp,
+    topPadding : Dp,
+    hazeState : HazeState?
 ) {
     val pullRefreshState = rememberPullToRefreshState()
     val failedEnable = stringResource(R.string.module_failed_to_enable)
@@ -793,21 +815,31 @@ private fun ModuleList(
         }
     }
 
+    var pullToRefreshBoxModifier = boxModifier
+
+    pullToRefreshBoxModifier = if (hazeState != null) pullToRefreshBoxModifier.hazeSource(state = hazeState) else pullToRefreshBoxModifier
+
     PullToRefreshBox(
         state = pullRefreshState,
-        modifier = boxModifier,
         onRefresh = {
             viewModel.fetchModuleList()
         },
+        modifier = pullToRefreshBoxModifier.fillMaxSize(),
         indicator = {
             PullToRefreshDefaults.LoadingIndicator(
+                modifier = Modifier.padding(top = topPadding).align(Alignment.TopCenter),
                 state = pullRefreshState,
                 isRefreshing = viewModel.isRefreshing,
-                modifier = Modifier.align(Alignment.TopCenter),
             )
         },
         isRefreshing = viewModel.isRefreshing
     ) {
+        val metaModuleWarningText by produceState<String?>(initialValue = null, viewModel.moduleList) {
+            value = withContext(Dispatchers.IO) {
+                getMetaModuleWarningText(viewModel, context)
+            }
+        }
+
         LazyColumn(
             state = listState,
             modifier = modifier,
@@ -822,8 +854,15 @@ private fun ModuleList(
             },
         ) {
             item {
-                MetaModuleWarningCard(viewModel)
+                Spacer(modifier = Modifier.height(topPadding))
             }
+
+            if (metaModuleWarningText != null) {
+                item {
+                    MetaModuleWarningCard(metaModuleWarningText!!)
+                }
+            }
+
             when {
                 viewModel.moduleList.isEmpty() -> {
                     item {
@@ -912,6 +951,10 @@ private fun ModuleList(
                     }
                 }
             }
+
+            item {
+                Spacer(modifier = Modifier.height(bottomPadding))
+            }
         }
 
         DownloadListener(context, onInstallModule)
@@ -939,7 +982,7 @@ fun ModuleItem(
     val hapticFeedback = LocalHapticFeedback.current
 
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
         elevation = getCardElevation(),
     ) {
         val textDecoration = if (!module.remove) null else TextDecoration.LineThrough

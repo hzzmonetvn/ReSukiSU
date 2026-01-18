@@ -1,10 +1,30 @@
 package com.resukisu.resukisu.ui.screen
 
 import android.content.Context
-import androidx.compose.animation.*
+import android.os.Process.myUid
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -12,38 +32,79 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.component.*
+import com.resukisu.resukisu.ui.component.ConfirmResult
+import com.resukisu.resukisu.ui.component.SearchAppBar
+import com.resukisu.resukisu.ui.component.pinnedScrollBehavior
+import com.resukisu.resukisu.ui.component.rememberConfirmDialog
+import com.resukisu.resukisu.ui.component.rememberLoadingDialog
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
-import com.resukisu.resukisu.ui.util.*
+import com.resukisu.resukisu.ui.util.LocalSnackbarHost
+import com.resukisu.resukisu.ui.util.getRootShell
+import com.resukisu.resukisu.ui.util.runCmd
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.*
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import android.os.Process.myUid
-import androidx.core.content.edit
 
 private val SPACING_SMALL = 4.dp
 private val SPACING_MEDIUM = 8.dp
@@ -108,7 +169,7 @@ private fun loadExcludedSubTypes(context: Context): Set<LogExclType> {
 @Destination<RootGraph>
 @Composable
 fun LogViewerScreen(navigator: DestinationsNavigator) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = pinnedScrollBehavior()
     val snackBarHost = LocalSnackbarHost.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -117,10 +178,11 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     var isLoading by remember { mutableStateOf(false) }
     var filterType by rememberSaveable { mutableStateOf<LogType?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var showSearchBar by rememberSaveable { mutableStateOf(false) }
     var pageInfo by remember { mutableStateOf(LogPageInfo()) }
     var lastLogFileHash by remember { mutableStateOf("") }
     val currentUid = remember { myUid().toString() }
+
+    val hazeState = if (ThemeConfig.backgroundImageLoaded) rememberHazeState() else null
 
     val initialExcluded = remember {
         loadExcludedSubTypes(context)
@@ -216,54 +278,51 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
 
     Scaffold(
         topBar = {
-            LogViewerTopBar(
+            SearchAppBar(
                 scrollBehavior = scrollBehavior,
                 onBackClick = { navigator.navigateUp() },
-                showSearchBar = showSearchBar,
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onSearchToggle = { showSearchBar = !showSearchBar },
-                onRefresh = onManualRefresh,
-                onClearLogs = {
-                    scope.launch {
-                        val result = confirmDialog.awaitConfirm(
-                            title = context.getString(R.string.log_viewer_clear_logs),
-                            content = context.getString(R.string.log_viewer_clear_logs_confirm)
+                searchText = searchQuery,
+                onSearchTextChange = { searchQuery = it },
+                searchBarPlaceHolderText = stringResource(R.string.log_viewer_search_placeholder),
+                dropdownContent = {
+                    IconButton(onClick = onManualRefresh) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.log_viewer_refresh)
                         )
-                        if (result == ConfirmResult.Confirmed) {
-                            loadingDialog.withLoading {
-                                clearLogs()
-                                loadPage(0, true)
-                            }
-                            snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
-                        }
                     }
-                }
+                    IconButton(onClick = {
+                        scope.launch {
+                            val result = confirmDialog.awaitConfirm(
+                                title = context.getString(R.string.log_viewer_clear_logs),
+                                content = context.getString(R.string.log_viewer_clear_logs_confirm)
+                            )
+                            if (result == ConfirmResult.Confirmed) {
+                                loadingDialog.withLoading {
+                                    clearLogs()
+                                    loadPage(0, true)
+                                }
+                                snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
+                            }
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.DeleteSweep,
+                            contentDescription = stringResource(R.string.log_viewer_clear_logs)
+                        )
+                    }
+                },
+                hazeState = hazeState
             )
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         snackbarHost = { SnackbarHost(snackBarHost) },
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-        ) {
-            LogControlPanel(
-                filterType = filterType,
-                onFilterTypeSelected = { filterType = it },
-                logCount = filteredEntries.size,
-                totalCount = logEntries.size,
-                pageInfo = pageInfo,
-                excludedSubTypes = excludedSubTypes,
-                onExcludeToggle = { excl ->
-                    excludedSubTypes = if (excl in excludedSubTypes)
-                        excludedSubTypes - excl
-                    else
-                        excludedSubTypes + excl
-                }
-            )
-
+        Column (
+            modifier = if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier
+        ){
             // 日志列表
             if (isLoading && logEntries.isEmpty()) {
                 Box(
@@ -279,11 +338,28 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                 )
             } else {
                 LogList(
+                    header = {
+                        LogControlPanel(
+                            filterType = filterType,
+                            onFilterTypeSelected = { filterType = it },
+                            logCount = filteredEntries.size,
+                            totalCount = logEntries.size,
+                            pageInfo = pageInfo,
+                            excludedSubTypes = excludedSubTypes,
+                            onExcludeToggle = { excl ->
+                                excludedSubTypes = if (excl in excludedSubTypes)
+                                    excludedSubTypes - excl
+                                else
+                                    excludedSubTypes + excl
+                            }
+                        )
+                    },
                     entries = filteredEntries,
                     pageInfo = pageInfo,
                     isLoading = isLoading,
                     onLoadMore = loadNextPage,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    topPadding = paddingValues.calculateTopPadding()
                 )
             }
         }
@@ -305,7 +381,7 @@ private fun LogControlPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
+            .padding(vertical = 8.dp),
         colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = getCardElevation()
     ) {
@@ -444,7 +520,9 @@ private fun LogList(
     pageInfo: LogPageInfo,
     isLoading: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    topPadding: Dp,
+    header: @Composable () -> Unit
 ) {
     val listState = rememberLazyListState()
 
@@ -454,6 +532,14 @@ private fun LogList(
         contentPadding = PaddingValues(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
         verticalArrangement = Arrangement.spacedBy(SPACING_SMALL)
     ) {
+        item {
+            Spacer(modifier = Modifier.height(topPadding))
+        }
+
+        item {
+            header()
+        }
+
         items(entries) { entry ->
             LogEntryCard(entry = entry)
         }

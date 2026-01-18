@@ -13,10 +13,8 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -30,14 +28,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Android
@@ -56,15 +54,15 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -75,6 +73,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -87,35 +86,42 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.ui.MainActivity
-import com.resukisu.resukisu.ui.component.KsuIsValid
+import com.resukisu.resukisu.ui.component.ksuIsValid
+import com.resukisu.resukisu.ui.component.settings.DropdownWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsBaseWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsJumpPageWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
+import com.resukisu.resukisu.ui.component.settings.SplicedColumnGroup
+import com.resukisu.resukisu.ui.component.settings.SplicedGroupScope
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.ThemeColors
 import com.resukisu.resukisu.ui.theme.ThemeConfig
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import zako.zako.zako.zakoui.screen.moreSettings.component.ColorCircle
 import zako.zako.zako.zakoui.screen.moreSettings.component.LanguageSelectionDialog
 import zako.zako.zako.zakoui.screen.moreSettings.component.MoreSettingsDialogs
-import zako.zako.zako.zakoui.screen.moreSettings.component.SettingItem
-import zako.zako.zako.zakoui.screen.moreSettings.component.SettingsCard
-import zako.zako.zako.zakoui.screen.moreSettings.component.SettingsDivider
-import zako.zako.zako.zakoui.screen.moreSettings.component.SwitchSettingItem
-import zako.zako.zako.zakoui.screen.moreSettings.component.UidScannerSection
 import zako.zako.zako.zakoui.screen.moreSettings.state.MoreSettingsState
 import zako.zako.zako.zakoui.screen.moreSettings.util.LocaleHelper
 import java.io.File
 import kotlin.math.roundToInt
 
 @SuppressLint("LocalContextConfigurationRead", "LocalContextResourcesRead", "ObsoleteSdkInt")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Destination<RootGraph>
 @Composable
 fun MoreSettingsScreen(
     navigator: DestinationsNavigator
 ) {
     // 顶部滚动行为
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val topAppBarState = rememberTopAppBarState()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState)
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
@@ -132,19 +138,22 @@ fun MoreSettingsScreen(
             override fun createIntent(context: Context, input: Uri): Intent {
                 val tempFile = File(context.cacheDir, "background_crop_cache").apply {
                     parentFile?.mkdirs()
-                    if (!exists()) createNewFile()
+                    delete()
+                    createNewFile()
+                    deleteOnExit()
                 }
-                val tempUri = FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    tempFile
-                )
 
                 context.contentResolver.openInputStream(input)?.use { inputStream ->
                     tempFile.outputStream().use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }
+
+                val tempUri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    tempFile
+                )
 
                 return Intent("com.android.camera.action.CROP").apply {
                     setDataAndType(tempUri, "image/*")
@@ -199,14 +208,34 @@ fun MoreSettingsScreen(
         handlers = settingsHandlers
     )
 
+    val hazeState = if (ThemeConfig.backgroundImageLoaded) rememberHazeState() else null
+
+    val hazeStyle = if (ThemeConfig.backgroundImageLoaded) HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+            alpha = 0.8f
+        ),
+        tint = HazeTint(Color.Transparent)
+    ) else null
+
+    val collapsedFraction = scrollBehavior.state.collapsedFraction
+    val modifier = if (ThemeConfig.backgroundImageLoaded && hazeStyle != null && hazeState != null) {
+        Modifier.hazeEffect(hazeState) {
+            style = hazeStyle
+            noiseFactor = 0f
+            blurRadius = 30.dp
+            alpha = collapsedFraction
+        }
+    }
+    else Modifier
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeFlexibleTopAppBar(
+                modifier = modifier,
                 title = {
                     Text(
-                        text = stringResource(R.string.more_settings),
-                        style = MaterialTheme.typography.titleLarge
+                        text = stringResource(R.string.more_settings)
                     )
                 },
                 navigationIcon = {
@@ -218,43 +247,61 @@ fun MoreSettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = CardConfig.cardAlpha),
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = CardConfig.cardAlpha)
+                    containerColor =
+                        if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                        else MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor =
+                        if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                        else MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 scrollBehavior = scrollBehavior
             )
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
+        LazyColumn(
+            modifier = if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(top = 8.dp)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
         ) {
-            // 外观设置
-            AppearanceSettings(
-                state = settingsState,
-                handlers = settingsHandlers,
-                pickImageLauncher = pickImageLauncher,
-                coroutineScope = coroutineScope
-            )
+            item {
+                Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding()))
+            }
 
-            // 自定义设置
-            CustomizationSettings(
-                state = settingsState,
-                handlers = settingsHandlers
-            )
+            item {
+                // 外观设置
+                AppearanceSettings(
+                    state = settingsState,
+                    handlers = settingsHandlers,
+                    pickImageLauncher = pickImageLauncher,
+                    coroutineScope = coroutineScope
+                )
+            }
 
-            // 高级设置
-            KsuIsValid {
-                AdvancedSettings(
+            item {
+                // 自定义设置
+                CustomizationSettings(
                     state = settingsState,
                     handlers = settingsHandlers
                 )
+            }
+
+            if (ksuIsValid()) {
+                // 高级设置
+                item {
+                    AdvancedSettings(
+                        state = settingsState,
+                        handlers = settingsHandlers
+                    )
+                }
+            }
+
+            item {
+                // 系统导航栏padding计算
+                Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding()))
             }
         }
     }
@@ -267,52 +314,59 @@ private fun AppearanceSettings(
     pickImageLauncher: ManagedActivityResultLauncher<String, Uri?>,
     coroutineScope: CoroutineScope
 ) {
-    SettingsCard(title = stringResource(R.string.appearance_settings)) {
-        // 语言设置
-        LanguageSetting(state = state)
+    SplicedColumnGroup(title = stringResource(R.string.appearance_settings)) {
+        item {
+            // 语言设置
+            LanguageSetting(state = state)
+        }
 
-        // 主题模式
-        SettingItem(
-            icon = Icons.Default.DarkMode,
-            title = stringResource(R.string.theme_mode),
-            subtitle = state.themeOptions[state.themeMode],
-            onClick = { state.showThemeModeDialog = true }
-        )
-
-        // 动态颜色开关
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            SwitchSettingItem(
-                icon = Icons.Filled.ColorLens,
-                title = stringResource(R.string.dynamic_color_title),
-                summary = stringResource(R.string.dynamic_color_summary),
-                checked = state.useDynamicColor,
-                onChange = handlers::handleDynamicColorChange
+        item {
+            // 主题模式
+            DropdownWidget(
+                icon = Icons.Default.DarkMode,
+                title = stringResource(R.string.theme_mode),
+                items = state.themeOptions,
+                selectedIndex = state.themeMode,
+                onSelectedIndexChange = { index ->
+                    handlers.handleThemeModeChange(index)
+                }
             )
         }
 
-        // 主题色选择
-        AnimatedVisibility(
-            visible = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || !state.useDynamicColor,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            item {
+                // 动态颜色开关
+                SettingsSwitchWidget(
+                    icon = Icons.Filled.ColorLens,
+                    title = stringResource(R.string.dynamic_color_title),
+                    description = stringResource(R.string.dynamic_color_summary),
+                    checked = state.useDynamicColor,
+                    onCheckedChange = handlers::handleDynamicColorChange
+                )
+            }
+        }
+
+        item(
+            visible = !state.useDynamicColor || Build.VERSION.SDK_INT < Build.VERSION_CODES.S
         ) {
+            // 主题色选择
             ThemeColorSelection(state = state)
         }
 
-        SettingsDivider()
+        item {
+            // DPI 设置
+            DpiSettings(state = state, handlers = handlers)
+        }
 
-        // DPI 设置
-        DpiSettings(state = state, handlers = handlers)
-
-        SettingsDivider()
-
-        // 自定义背景设置
-        CustomBackgroundSettings(
-            state = state,
-            handlers = handlers,
-            pickImageLauncher = pickImageLauncher,
-            coroutineScope = coroutineScope
-        )
+        item {
+            // 自定义背景设置
+            CustomBackgroundSettings(
+                state = state,
+                handlers = handlers,
+                pickImageLauncher = pickImageLauncher,
+                coroutineScope = coroutineScope
+            )
+        }
     }
 }
 
@@ -321,125 +375,147 @@ private fun CustomizationSettings(
     state: MoreSettingsState,
     handlers: MoreSettingsHandlers
 ) {
-    SettingsCard(title = stringResource(R.string.custom_settings)) {
-        // 图标切换
-        SwitchSettingItem(
-            icon = Icons.Default.Android,
-            title = stringResource(R.string.icon_switch_title),
-            summary = stringResource(R.string.icon_switch_summary),
-            checked = state.useAltIcon,
-            onChange = handlers::handleIconChange
-        )
+    SplicedColumnGroup(title = stringResource(R.string.custom_settings)) {
+        item {
+            // 图标切换
+            SettingsSwitchWidget(
+                icon = Icons.Default.Android,
+                title = stringResource(R.string.icon_switch_title),
+                description = stringResource(R.string.icon_switch_summary),
+                checked = state.useAltIcon,
+                onCheckedChange = handlers::handleIconChange
+            )
+        }
 
-        // 显示更多模块信息
-        SwitchSettingItem(
-            icon = Icons.Filled.Info,
-            title = stringResource(R.string.show_more_module_info),
-            summary = stringResource(R.string.show_more_module_info_summary),
-            checked = state.showMoreModuleInfo,
-            onChange = handlers::handleShowMoreModuleInfoChange
-        )
+        item {
+            // 显示更多模块信息
+            SettingsSwitchWidget(
+                icon = Icons.Filled.Info,
+                title = stringResource(R.string.show_more_module_info),
+                description = stringResource(R.string.show_more_module_info_summary),
+                checked = state.showMoreModuleInfo,
+                onCheckedChange = handlers::handleShowMoreModuleInfoChange
+            )
+        }
 
-        // 简洁模式开关
-        SwitchSettingItem(
-            icon = Icons.Filled.Brush,
-            title = stringResource(R.string.simple_mode),
-            summary = stringResource(R.string.simple_mode_summary),
-            checked = state.isSimpleMode,
-            onChange = handlers::handleSimpleModeChange
-        )
+        item {
+            // 简洁模式开关
+            SettingsSwitchWidget(
+                icon = Icons.Filled.Brush,
+                title = stringResource(R.string.simple_mode),
+                description = stringResource(R.string.simple_mode_summary),
+                checked = state.isSimpleMode,
+                onCheckedChange = handlers::handleSimpleModeChange
+            )
+        }
 
-        SwitchSettingItem(
-            icon = Icons.Filled.Brush,
-            title = stringResource(R.string.kernel_simple_kernel),
-            summary = stringResource(R.string.kernel_simple_kernel_summary),
-            checked = state.isKernelSimpleMode,
-            onChange = handlers::handleKernelSimpleModeChange
-        )
+        item {
+            SettingsSwitchWidget(
+                icon = Icons.Filled.Brush,
+                title = stringResource(R.string.kernel_simple_kernel),
+                description = stringResource(R.string.kernel_simple_kernel_summary),
+                checked = state.isKernelSimpleMode,
+                onCheckedChange = handlers::handleKernelSimpleModeChange
+            )
+        }
 
-        // 各种隐藏选项
-        HideOptionsSettings(state = state, handlers = handlers)
+        hideOptionsSettings(state = state, handlers = handlers)
     }
 }
 
-@Composable
-private fun HideOptionsSettings(
+private fun SplicedGroupScope.hideOptionsSettings(
     state: MoreSettingsState,
     handlers: MoreSettingsHandlers
 ) {
-    // 隐藏内核版本号
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_kernel_kernelsu_version),
-        summary = stringResource(R.string.hide_kernel_kernelsu_version_summary),
-        checked = state.isHideVersion,
-        onChange = handlers::handleHideVersionChange
-    )
-
-    // 隐藏模块数量等信息
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_other_info),
-        summary = stringResource(R.string.hide_other_info_summary),
-        checked = state.isHideOtherInfo,
-        onChange = handlers::handleHideOtherInfoChange
-    )
-
-    // SuSFS 状态信息
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_susfs_status),
-        summary = stringResource(R.string.hide_susfs_status_summary),
-        checked = state.isHideSusfsStatus,
-        onChange = handlers::handleHideSusfsStatusChange
-    )
-
-    // Zygisk 实现状态信息
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_zygisk_implement),
-        summary = stringResource(R.string.hide_zygisk_implement_summary),
-        checked = state.isHideZygiskImplement,
-        onChange = handlers::handleHideZygiskImplementChange
-    )
-
-    // 元模块实现状态信息
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_meta_module_implement),
-        summary = stringResource(R.string.hide_meta_module_implement_summary),
-        checked = state.isHideMetaModuleImplement,
-        onChange = handlers::handleHideMetaModuleImplementChange
-    )
-
-    // KPM 状态信息隐藏
-    if (Natives.version >= Natives.MINIMAL_SUPPORTED_KPM) {
-        SwitchSettingItem(
+    item {
+        // 隐藏内核版本号
+        SettingsSwitchWidget(
             icon = Icons.Filled.VisibilityOff,
-            title = stringResource(R.string.show_kpm_info),
-            summary = stringResource(R.string.show_kpm_info_summary),
-            checked = state.isShowKpmInfo,
-            onChange = handlers::handleShowKpmInfoChange
+            title = stringResource(R.string.hide_kernel_kernelsu_version),
+            description = stringResource(R.string.hide_kernel_kernelsu_version_summary),
+            checked = state.isHideVersion,
+            onCheckedChange = handlers::handleHideVersionChange
         )
     }
 
-    // 隐藏链接信息
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_link_card),
-        summary = stringResource(R.string.hide_link_card_summary),
-        checked = state.isHideLinkCard,
-        onChange = handlers::handleHideLinkCardChange
-    )
+    item {
+        // 隐藏模块数量等信息
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_other_info),
+            description = stringResource(R.string.hide_other_info_summary),
+            checked = state.isHideOtherInfo,
+            onCheckedChange = handlers::handleHideOtherInfoChange
+        )
+    }
 
-    // 隐藏标签行
-    SwitchSettingItem(
-        icon = Icons.Filled.VisibilityOff,
-        title = stringResource(R.string.hide_tag_card),
-        summary = stringResource(R.string.hide_tag_card_summary),
-        checked = state.isHideTagRow,
-        onChange = handlers::handleHideTagRowChange
-    )
+    item {
+        // SuSFS 状态信息
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_susfs_status),
+            description = stringResource(R.string.hide_susfs_status_summary),
+            checked = state.isHideSusfsStatus,
+            onCheckedChange = handlers::handleHideSusfsStatusChange
+        )
+    }
+
+    item {
+        // Zygisk 实现状态信息
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_zygisk_implement),
+            description = stringResource(R.string.hide_zygisk_implement_summary),
+            checked = state.isHideZygiskImplement,
+            onCheckedChange = handlers::handleHideZygiskImplementChange
+        )
+    }
+
+    item {
+        // 元模块实现状态信息
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_meta_module_implement),
+            description = stringResource(R.string.hide_meta_module_implement_summary),
+            checked = state.isHideMetaModuleImplement,
+            onCheckedChange = handlers::handleHideMetaModuleImplementChange
+        )
+    }
+
+    // KPM 状态信息隐藏
+    if (Natives.version >= Natives.MINIMAL_SUPPORTED_KPM) {
+        item {
+            SettingsSwitchWidget(
+                icon = Icons.Filled.VisibilityOff,
+                title = stringResource(R.string.show_kpm_info),
+                description = stringResource(R.string.show_kpm_info_summary),
+                checked = state.isShowKpmInfo,
+                onCheckedChange = handlers::handleShowKpmInfoChange
+            )
+        }
+    }
+
+    item {
+        // 隐藏链接信息
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_link_card),
+            description = stringResource(R.string.hide_link_card_summary),
+            checked = state.isHideLinkCard,
+            onCheckedChange = handlers::handleHideLinkCardChange
+        )
+    }
+
+    item {
+        // 隐藏标签行
+        SettingsSwitchWidget(
+            icon = Icons.Filled.VisibilityOff,
+            title = stringResource(R.string.hide_tag_card),
+            description = stringResource(R.string.hide_tag_card_summary),
+            checked = state.isHideTagRow,
+            onCheckedChange = handlers::handleHideTagRowChange
+        )
+    }
 }
 
 @Composable
@@ -447,50 +523,48 @@ private fun AdvancedSettings(
     state: MoreSettingsState,
     handlers: MoreSettingsHandlers
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val snackBarHost = remember { SnackbarHostState() }
-    val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
 
-    SettingsCard(title = stringResource(R.string.advanced_settings)) {
-        // SELinux 开关
-        SwitchSettingItem(
-            icon = Icons.Filled.Security,
-            title = stringResource(R.string.selinux),
-            summary = if (state.selinuxEnabled)
-                stringResource(R.string.selinux_enabled) else
-                stringResource(R.string.selinux_disabled),
-            checked = state.selinuxEnabled,
-            onChange = handlers::handleSelinuxChange
-        )
-
-        // UID 扫描开关
-        if (Natives.version >= Natives.MINIMAL_SUPPORTED_UID_SCANNER && Natives.version >= Natives.MINIMAL_NEW_IOCTL_KERNEL) {
-            UidScannerSection(prefs, snackBarHost, scope, context)
+    SplicedColumnGroup(title = stringResource(R.string.advanced_settings)) {
+        item {
+            // SELinux 开关
+            SettingsSwitchWidget(
+                icon = Icons.Filled.Security,
+                title = stringResource(R.string.selinux),
+                description = if (state.selinuxEnabled)
+                    stringResource(R.string.selinux_enabled) else
+                    stringResource(R.string.selinux_disabled),
+                checked = state.selinuxEnabled,
+                onCheckedChange = handlers::handleSelinuxChange
+            )
         }
 
-        // 动态管理器设置
-        if (Natives.version >= Natives.MINIMAL_SUPPORTED_DYNAMIC_MANAGER && Natives.version >= Natives.MINIMAL_NEW_IOCTL_KERNEL) {
-            SettingItem(
-                icon = Icons.Filled.Security,
-                title = stringResource(R.string.dynamic_manager_title),
-                subtitle = if (state.isDynamicSignEnabled) {
-                    stringResource(R.string.dynamic_manager_enabled_summary, state.dynamicSignSize)
-                } else {
-                    stringResource(R.string.dynamic_manager_disabled)
-                },
-                onClick = { state.showDynamicSignDialog = true }
-            )
+        item {
+            // 动态管理器设置
+            if (Natives.version >= Natives.MINIMAL_SUPPORTED_DYNAMIC_MANAGER && Natives.version >= Natives.MINIMAL_NEW_IOCTL_KERNEL) {
+                SettingsJumpPageWidget(
+                    icon = Icons.Filled.Security,
+                    title = stringResource(R.string.dynamic_manager_title),
+                    description = if (state.isDynamicSignEnabled) {
+                        stringResource(
+                            R.string.dynamic_manager_enabled_summary,
+                            state.dynamicSignSize
+                        )
+                    } else {
+                        stringResource(R.string.dynamic_manager_disabled)
+                    },
+                    onClick = { state.showDynamicSignDialog = true }
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun ThemeColorSelection(state: MoreSettingsState) {
-    SettingItem(
+    SettingsBaseWidget(
         icon = Icons.Default.Palette,
         title = stringResource(R.string.theme_color),
-        subtitle = when (ThemeConfig.currentTheme) {
+        description = when (ThemeConfig.currentTheme) {
             is ThemeColors.Green -> stringResource(R.string.color_green)
             is ThemeColors.Purple -> stringResource(R.string.color_purple)
             is ThemeColors.Orange -> stringResource(R.string.color_orange)
@@ -500,32 +574,31 @@ private fun ThemeColorSelection(state: MoreSettingsState) {
             else -> stringResource(R.string.color_default)
         },
         onClick = { state.showThemeColorDialog = true },
-        trailingContent = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 8.dp)
-            ) {
-                val theme = ThemeConfig.currentTheme
-                val isDark = isSystemInDarkTheme()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 8.dp)
+        ) {
+            val theme = ThemeConfig.currentTheme
+            val isDark = isSystemInDarkTheme()
 
-                ColorCircle(
-                    color = if (isDark) theme.primaryDark else theme.primaryLight,
-                    isSelected = false,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-                ColorCircle(
-                    color = if (isDark) theme.secondaryDark else theme.secondaryLight,
-                    isSelected = false,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-                ColorCircle(
-                    color = if (isDark) theme.tertiaryDark else theme.tertiaryLight,
-                    isSelected = false,
-                    modifier = Modifier.padding(horizontal = 2.dp)
-                )
-            }
+            ColorCircle(
+                color = if (isDark) theme.primaryDark else theme.primaryLight,
+                isSelected = false,
+                modifier = Modifier.padding(horizontal = 2.dp)
+            )
+            ColorCircle(
+                color = if (isDark) theme.secondaryDark else theme.secondaryLight,
+                isSelected = false,
+                modifier = Modifier.padding(horizontal = 2.dp)
+            )
+            ColorCircle(
+                color = if (isDark) theme.tertiaryDark else theme.tertiaryLight,
+                isSelected = false,
+                modifier = Modifier.padding(horizontal = 2.dp)
+            )
         }
-    )
+    }
 }
 
 @Composable
@@ -533,19 +606,18 @@ private fun DpiSettings(
     state: MoreSettingsState,
     handlers: MoreSettingsHandlers
 ) {
-    SettingItem(
+    SettingsBaseWidget(
         icon = Icons.Default.FormatSize,
         title = stringResource(R.string.app_dpi_title),
-        subtitle = stringResource(R.string.app_dpi_summary),
+        description = stringResource(R.string.app_dpi_summary),
         onClick = {},
-        trailingContent = {
-            Text(
-                text = handlers.getDpiFriendlyName(state.tempDpi),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    )
+    ) {
+        Text(
+            text = handlers.getDpiFriendlyName(state.tempDpi),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
 
     // DPI 滑动条和控制
     DpiSliderControls(state = state, handlers = handlers)
@@ -652,12 +724,12 @@ private fun CustomBackgroundSettings(
     coroutineScope: CoroutineScope
 ) {
     // 自定义背景开关
-    SwitchSettingItem(
+    SettingsSwitchWidget(
         icon = Icons.Filled.Wallpaper,
         title = stringResource(id = R.string.settings_custom_background),
-        summary = stringResource(id = R.string.settings_custom_background_summary),
+        description = stringResource(id = R.string.settings_custom_background_summary),
         checked = state.isCustomBackgroundEnabled,
-        onChange = { isChecked ->
+        onCheckedChange = { isChecked ->
             if (isChecked) {
                 pickImageLauncher.launch("image/*")
             } else {
@@ -820,10 +892,10 @@ private fun LanguageSetting(state: MoreSettingsState) {
         }
     }
 
-    SettingItem(
+    SettingsJumpPageWidget(
         icon = Icons.Filled.Translate,
         title = language,
-        subtitle = currentLanguageDisplay,
+        description = currentLanguageDisplay,
         onClick = { state.showLanguageDialog = true }
     )
 

@@ -124,7 +124,7 @@ dependencies {
     implementation(libs.androidx.documentfile)
     implementation(libs.androidx.compose.foundation)
 
-    implementation("androidx.compose.runtime:runtime-tracing")
+    implementation(libs.androidx.compose.runtime.tracing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
@@ -138,6 +138,10 @@ dependencies {
     implementation(libs.com.github.topjohnwu.libsu.core)
     implementation(libs.com.github.topjohnwu.libsu.service)
     implementation(libs.com.github.topjohnwu.libsu.io)
+
+    implementation(libs.m3color)
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
 
     implementation(libs.dev.rikka.rikkax.parcelablelist)
 

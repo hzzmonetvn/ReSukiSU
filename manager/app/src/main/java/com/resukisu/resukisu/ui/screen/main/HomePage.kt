@@ -29,13 +29,11 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Adb
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
@@ -62,7 +60,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
@@ -80,6 +77,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -89,7 +87,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.pm.PackageInfoCompat
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SuSFSConfigScreenDestination
@@ -104,9 +101,8 @@ import com.resukisu.resukisu.ui.component.WarningCard
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.screen.LabelText
 import com.resukisu.resukisu.ui.susfs.util.SuSFSManager
-import com.resukisu.resukisu.ui.theme.CardConfig
-import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
 import com.resukisu.resukisu.ui.theme.CardConfig.cardElevation
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
 import com.resukisu.resukisu.ui.util.checkNewVersion
@@ -114,6 +110,11 @@ import com.resukisu.resukisu.ui.util.getSuSFSStatus
 import com.resukisu.resukisu.ui.util.module.LatestVersionInfo
 import com.resukisu.resukisu.ui.util.reboot
 import com.resukisu.resukisu.ui.viewmodel.HomeViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -125,7 +126,11 @@ import kotlin.random.Random
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun HomePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
+fun HomePage(
+    navigator: DestinationsNavigator,
+    bottomPadding: Dp,
+    hazeState: HazeState?
+) {
     val context = LocalContext.current
     val viewModel = viewModel<HomeViewModel>(
         viewModelStoreOwner = context.applicationContext as KernelSUApplication
@@ -145,14 +150,16 @@ fun HomePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
     val scrollState = rememberScrollState()
 
     Scaffold(
-        modifier = Modifier.padding(bottom = bottomPadding),
         topBar = {
             TopBar(
                 scrollBehavior = scrollBehavior,
                 navigator = navigator,
-                isDataLoaded = viewModel.isCoreDataLoaded
+                isDataLoaded = viewModel.isCoreDataLoaded,
+                hazeState = hazeState
             )
         },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         )
@@ -161,14 +168,13 @@ fun HomePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
             state = pullRefreshState,
             isRefreshing = viewModel.isRefreshing,
             onRefresh = { viewModel.refreshData(context) },
-            modifier = Modifier
-                .padding(innerPadding)
+            modifier = (if (hazeState != null) Modifier.hazeSource(state = hazeState) else Modifier)
                 .fillMaxSize(),
             indicator = {
                 PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier.padding(top = innerPadding.calculateTopPadding()).align(Alignment.TopCenter),
                     state = pullRefreshState,
                     isRefreshing = viewModel.isRefreshing,
-                    modifier = Modifier.align(Alignment.TopCenter),
                 )
             },
         ) {
@@ -180,6 +186,7 @@ fun HomePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                     .padding(top = 12.dp, start = 16.dp, end = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Spacer(modifier = Modifier.height(innerPadding.calculateTopPadding()))
                 // 状态卡片
                 if (viewModel.isCoreDataLoaded) {
                     StatusCard(
@@ -255,7 +262,7 @@ fun HomePage(navigator: DestinationsNavigator, bottomPadding: Dp) {
                     LearnMoreCard()
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(bottomPadding))
             }
         }
     }
@@ -329,25 +336,43 @@ fun RebootDropdownItem(@StringRes id: Int, reason: String = "") {
 private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     navigator: DestinationsNavigator,
-    isDataLoaded: Boolean = false
+    isDataLoaded: Boolean = false,
+    hazeState: HazeState? = null
 ) {
     val context = LocalContext.current
-    val colorScheme = MaterialTheme.colorScheme
-    val cardColor = if (CardConfig.isCustomBackgroundEnabled) {
-        colorScheme.surfaceContainerLow
-    } else {
-        colorScheme.background
+
+    val hazeStyle = if (ThemeConfig.backgroundImageLoaded) HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+            alpha = 0.8f
+        ),
+        tint = HazeTint(Color.Transparent)
+    ) else null
+
+    val collapsedFraction = scrollBehavior?.state?.collapsedFraction ?: 0f
+    val modifier = if (ThemeConfig.backgroundImageLoaded && hazeStyle != null && hazeState != null) {
+        Modifier.hazeEffect(hazeState) {
+            style = hazeStyle
+            noiseFactor = 0f
+            blurRadius = 30.dp
+            alpha = collapsedFraction
+        }
     }
+    else Modifier
 
     LargeFlexibleTopAppBar(
+        modifier = modifier,
         title = {
             Text(
                 text = stringResource(R.string.app_name)
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = cardColor.copy(alpha = cardAlpha),
-            scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
+            containerColor =
+                if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                else MaterialTheme.colorScheme.surfaceContainer,
+            scrolledContainerColor =
+                if (ThemeConfig.backgroundImageLoaded) Color.Transparent
+                else MaterialTheme.colorScheme.surfaceContainer,
         ),
         actions = {
             if (isDataLoaded) {
@@ -563,7 +588,7 @@ fun ContributionCard() {
     val links = listOf("https://github.com/ShirkNeko", "https://github.com/udochina")
 
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainer),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
         elevation = getCardElevation(),
     ) {
         Row(
@@ -598,7 +623,7 @@ fun LearnMoreCard() {
     val url = stringResource(R.string.home_learn_kernelsu_url)
 
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainer),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
         elevation = CardDefaults.cardElevation(defaultElevation = cardElevation)
     ) {
         Row(
@@ -631,7 +656,7 @@ fun DonateCard() {
     val uriHandler = LocalUriHandler.current
 
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainer),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
         elevation = getCardElevation(),
     ) {
         Row(
@@ -670,7 +695,7 @@ private fun InfoCard(
     lkmMode: Boolean?
 ) {
     ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainer),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
         elevation = getCardElevation(),
     ) {
         Column(

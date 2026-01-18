@@ -1,6 +1,8 @@
 package com.resukisu.resukisu.ui.component.profile
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -9,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.component.SwitchItem
+import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
 
 @Composable
 fun AppProfileConfig(
@@ -27,9 +29,10 @@ fun AppProfileConfig(
                 onValueChange = { onProfileChange(profile.copy(name = it)) }
             )
         }
-        SwitchItem(
+        SettingsSwitchWidget(
+            icon = Icons.Rounded.RemoveCircle,
             title = stringResource(R.string.profile_umount_modules),
-            summary = stringResource(R.string.profile_umount_modules_summary),
+            description = stringResource(R.string.profile_umount_modules_summary),
             checked = if (enabled) {
                 profile.umountModules
             } else {

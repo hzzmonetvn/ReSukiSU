@@ -13,14 +13,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
@@ -36,7 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.rememberNavController
@@ -58,6 +54,7 @@ import com.resukisu.resukisu.ui.component.InstallConfirmationDialog
 import com.resukisu.resukisu.ui.component.ZipFileInfo
 import com.resukisu.resukisu.ui.screen.BottomBarDestination
 import com.resukisu.resukisu.ui.theme.KernelSUTheme
+import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.util.LocalHandlePageChange
 import com.resukisu.resukisu.ui.util.LocalPagerState
 import com.resukisu.resukisu.ui.util.LocalSelectedPage
@@ -66,6 +63,7 @@ import com.resukisu.resukisu.ui.util.install
 import com.resukisu.resukisu.ui.viewmodel.HomeViewModel
 import com.resukisu.resukisu.ui.viewmodel.SuperUserViewModel
 import com.resukisu.resukisu.ui.webui.initPlatform
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -194,36 +192,32 @@ class MainActivity : ComponentActivity() {
                     CompositionLocalProvider(
                         LocalSnackbarHost provides snackBarHostState,
                     ) {
-                        Scaffold(
-                            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-                        ) { innerPadding ->
-                            DestinationsNavHost(
-                                modifier = Modifier.padding(innerPadding),
-                                navGraph = NavGraphs.root as NavHostGraphSpec,
-                                navController = navController,
-                                defaultTransitions = object : NavHostAnimatedDestinationStyle() {
-                                    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
-                                        {
-                                            slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
-                                        }
+                        DestinationsNavHost(
+                            navGraph = NavGraphs.root as NavHostGraphSpec,
+                            navController = navController,
+                            defaultTransitions = object :
+                                NavHostAnimatedDestinationStyle() {
+                                override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
+                                    {
+                                        slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
+                                    }
 
-                                    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
-                                        {
-                                            slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth })
-                                        }
+                                override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
+                                    {
+                                        slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth })
+                                    }
 
-                                    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
-                                        {
-                                            slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth })
-                                        }
+                                override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
+                                    {
+                                        slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth })
+                                    }
 
-                                    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
-                                        {
-                                            scaleOut(targetScale = 0.9f) + fadeOut()
-                                        }
-                                }
-                            )
-                        }
+                                override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
+                                    {
+                                        scaleOut(targetScale = 0.9f) + fadeOut()
+                                    }
+                            }
+                        )
                     }
                 }
             }
@@ -301,6 +295,7 @@ fun MainScreen(navigator: DestinationsNavigator, pageIndex: Int = 0) {
     var uiSelectedPage by remember { mutableIntStateOf(pageIndex) }
     var animateJob by remember { mutableStateOf<Job?>(null) }
     var lastRequestedPage by remember { mutableIntStateOf(pagerState.currentPage) }
+    val hazeState = if (ThemeConfig.backgroundImageLoaded) rememberHazeState() else null
 
     val handlePageChange: (Int) -> Unit = remember(pagerState, coroutineScope) {
         { page ->
@@ -359,8 +354,9 @@ fun MainScreen(navigator: DestinationsNavigator, pageIndex: Int = 0) {
     ) {
         Scaffold(
             bottomBar = {
-                BottomBar(pages)
+                BottomBar(pages, hazeState)
             },
+            containerColor = Color.Transparent
         ) { innerPadding ->
             HorizontalPager(
                 state = pagerState,
@@ -368,7 +364,7 @@ fun MainScreen(navigator: DestinationsNavigator, pageIndex: Int = 0) {
                 userScrollEnabled = userScrollEnabled,
             ) {
                 val destination = pages[it]
-                destination.direction(navigator, innerPadding.calculateBottomPadding())
+                destination.direction(navigator, innerPadding.calculateBottomPadding(), hazeState)
             }
         }
     }
