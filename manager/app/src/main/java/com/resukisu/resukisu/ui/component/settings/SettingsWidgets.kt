@@ -114,6 +114,8 @@ fun SettingsBaseWidget(
 ) {
     val haptic = LocalHapticFeedback.current
     val alpha = if (enabled) 1f else 0.38f
+    val onClickState = rememberUpdatedState(onClick)
+    val onLongClickState = rememberUpdatedState(onLongClick)
 
     var rowModifier = modifier
         .fillMaxWidth()
@@ -123,11 +125,11 @@ fun SettingsBaseWidget(
                     detectTapGestures(
                         onLongPress = {
                             haptic.performHapticFeedback(hapticFeedbackType)
-                            onLongClick(it)
+                            onLongClickState.value(it)
                         },
                         onTap = {
                             haptic.performHapticFeedback(hapticFeedbackType)
-                            onClick(it)
+                            onClickState.value(it)
                         }
                     )
                 }
