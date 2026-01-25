@@ -13,11 +13,21 @@ import com.resukisu.resukisu.KernelVersion
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.getKernelVersion
 import com.resukisu.resukisu.ksuApp
-import com.resukisu.resukisu.ui.util.*
+import com.resukisu.resukisu.ui.util.checkNewVersion
+import com.resukisu.resukisu.ui.util.getKpmModuleCount
+import com.resukisu.resukisu.ui.util.getKpmVersion
+import com.resukisu.resukisu.ui.util.getMetaModuleImplement
+import com.resukisu.resukisu.ui.util.getModuleCount
+import com.resukisu.resukisu.ui.util.getSELinuxStatus
+import com.resukisu.resukisu.ui.util.getSuSFSFeatures
+import com.resukisu.resukisu.ui.util.getSuSFSStatus
+import com.resukisu.resukisu.ui.util.getSuSFSVersion
+import com.resukisu.resukisu.ui.util.getSuperuserCount
+import com.resukisu.resukisu.ui.util.getZygiskImplement
 import com.resukisu.resukisu.ui.util.module.LatestVersionInfo
+import com.resukisu.resukisu.ui.util.rootAvailable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -239,9 +249,13 @@ class HomeViewModel : ViewModel() {
         loadingJobs.add(job)
     }
 
-    fun refreshData(context: Context) {
+    fun refreshData(
+        context: Context,
+        refreshUI: Boolean = false
+    ) {
         viewModelScope.launch {
-            isRefreshing = true
+            if (refreshUI)
+                isRefreshing = true
 
             try {
                 // 取消正在进行的加载任务
@@ -249,15 +263,16 @@ class HomeViewModel : ViewModel() {
                 loadingJobs.clear()
 
                 // 重置状态
-                isCoreDataLoaded = false
-                isExtendedDataLoaded = false
+                if (refreshUI) {
+                    isCoreDataLoaded = false
+                    isExtendedDataLoaded = false
+                }
 
                 // 重新加载用户设置
                 loadUserSettings(context)
 
                 // 重新加载核心数据
                 loadCoreData()
-                delay(100)
 
                 // 重新加载扩展数据
                 loadExtendedData(context)

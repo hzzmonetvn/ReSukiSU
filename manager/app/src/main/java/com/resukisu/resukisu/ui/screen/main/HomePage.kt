@@ -141,7 +141,7 @@ fun HomePage(
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
-            viewModel.refreshData(context)
+            viewModel.refreshData(context, false)
         }
     }
 
@@ -172,7 +172,9 @@ fun HomePage(
                 .fillMaxSize(),
             indicator = {
                 PullToRefreshDefaults.LoadingIndicator(
-                    modifier = Modifier.padding(top = innerPadding.calculateTopPadding()).align(Alignment.TopCenter),
+                    modifier = Modifier
+                        .padding(top = innerPadding.calculateTopPadding())
+                        .align(Alignment.TopCenter),
                     state = pullRefreshState,
                     isRefreshing = viewModel.isRefreshing,
                 )
