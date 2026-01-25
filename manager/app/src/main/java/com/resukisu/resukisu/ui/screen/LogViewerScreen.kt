@@ -31,16 +31,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,13 +48,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,8 +79,6 @@ import com.resukisu.resukisu.ui.component.SearchAppBar
 import com.resukisu.resukisu.ui.component.pinnedScrollBehavior
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberLoadingDialog
-import com.resukisu.resukisu.ui.theme.CardConfig
-import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
 import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.getCardColors
 import com.resukisu.resukisu.ui.theme.getCardElevation
@@ -278,42 +268,62 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
 
     Scaffold(
         topBar = {
-            SearchAppBar(
-                scrollBehavior = scrollBehavior,
-                onBackClick = { navigator.navigateUp() },
-                searchText = searchQuery,
-                onSearchTextChange = { searchQuery = it },
-                searchBarPlaceHolderText = stringResource(R.string.log_viewer_search_placeholder),
-                dropdownContent = {
-                    IconButton(onClick = onManualRefresh) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.log_viewer_refresh)
-                        )
-                    }
-                    IconButton(onClick = {
-                        scope.launch {
-                            val result = confirmDialog.awaitConfirm(
-                                title = context.getString(R.string.log_viewer_clear_logs),
-                                content = context.getString(R.string.log_viewer_clear_logs_confirm)
+            Column {
+                SearchAppBar(
+                    scrollBehavior = scrollBehavior,
+                    onBackClick = { navigator.navigateUp() },
+                    searchText = searchQuery,
+                    onSearchTextChange = { searchQuery = it },
+                    searchBarPlaceHolderText = stringResource(R.string.log_viewer_search_placeholder),
+                    dropdownContent = {
+                        IconButton(onClick = onManualRefresh) {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = stringResource(R.string.log_viewer_refresh)
                             )
-                            if (result == ConfirmResult.Confirmed) {
-                                loadingDialog.withLoading {
-                                    clearLogs()
-                                    loadPage(0, true)
-                                }
-                                snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
-                            }
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.DeleteSweep,
-                            contentDescription = stringResource(R.string.log_viewer_clear_logs)
-                        )
-                    }
-                },
-                hazeState = hazeState
-            )
+                        IconButton(onClick = {
+                            scope.launch {
+                                val result = confirmDialog.awaitConfirm(
+                                    title = context.getString(R.string.log_viewer_clear_logs),
+                                    content = context.getString(R.string.log_viewer_clear_logs_confirm)
+                                )
+                                if (result == ConfirmResult.Confirmed) {
+                                    loadingDialog.withLoading {
+                                        clearLogs()
+                                        loadPage(0, true)
+                                    }
+                                    snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
+                                }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.DeleteSweep,
+                                contentDescription = stringResource(R.string.log_viewer_clear_logs)
+                            )
+                        }
+                    },
+                    hazeState = hazeState
+                )
+                Box(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    LogControlPanel(
+                        filterType = filterType,
+                        onFilterTypeSelected = { filterType = it },
+                        logCount = filteredEntries.size,
+                        totalCount = logEntries.size,
+                        pageInfo = pageInfo,
+                        excludedSubTypes = excludedSubTypes,
+                        onExcludeToggle = { excl ->
+                            excludedSubTypes = if (excl in excludedSubTypes)
+                                excludedSubTypes - excl
+                            else
+                                excludedSubTypes + excl
+                        }
+                    )
+                }
+            }
         },
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -338,22 +348,6 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                 )
             } else {
                 LogList(
-                    header = {
-                        LogControlPanel(
-                            filterType = filterType,
-                            onFilterTypeSelected = { filterType = it },
-                            logCount = filteredEntries.size,
-                            totalCount = logEntries.size,
-                            pageInfo = pageInfo,
-                            excludedSubTypes = excludedSubTypes,
-                            onExcludeToggle = { excl ->
-                                excludedSubTypes = if (excl in excludedSubTypes)
-                                    excludedSubTypes - excl
-                                else
-                                    excludedSubTypes + excl
-                            }
-                        )
-                    },
                     entries = filteredEntries,
                     pageInfo = pageInfo,
                     isLoading = isLoading,
@@ -521,8 +515,7 @@ private fun LogList(
     isLoading: Boolean,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
-    topPadding: Dp,
-    header: @Composable () -> Unit
+    topPadding: Dp
 ) {
     val listState = rememberLazyListState()
 
@@ -534,10 +527,6 @@ private fun LogList(
     ) {
         item {
             Spacer(modifier = Modifier.height(topPadding))
-        }
-
-        item {
-            header()
         }
 
         items(entries) { entry ->
@@ -733,103 +722,6 @@ private fun EmptyLogState(
                 Spacer(modifier = Modifier.width(SPACING_MEDIUM))
                 Text(stringResource(R.string.log_viewer_refresh))
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LogViewerTopBar(
-    scrollBehavior: TopAppBarScrollBehavior? = null,
-    onBackClick: () -> Unit,
-    showSearchBar: Boolean,
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onSearchToggle: () -> Unit,
-    onRefresh: () -> Unit,
-    onClearLogs: () -> Unit
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    val cardColor = if (CardConfig.isCustomBackgroundEnabled) {
-        colorScheme.surfaceContainerLow
-    } else {
-        colorScheme.background
-    }
-
-    Column {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.log_viewer_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.log_viewer_back)
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = onSearchToggle) {
-                    Icon(
-                        imageVector = if (showSearchBar) Icons.Filled.SearchOff else Icons.Filled.Search,
-                        contentDescription = stringResource(R.string.log_viewer_search)
-                    )
-                }
-                IconButton(onClick = onRefresh) {
-                    Icon(
-                        imageVector = Icons.Filled.Refresh,
-                        contentDescription = stringResource(R.string.log_viewer_refresh)
-                    )
-                }
-                IconButton(onClick = onClearLogs) {
-                    Icon(
-                        imageVector = Icons.Filled.DeleteSweep,
-                        contentDescription = stringResource(R.string.log_viewer_clear_logs)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = cardColor.copy(alpha = cardAlpha),
-                scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
-            ),
-            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-            scrollBehavior = scrollBehavior
-        )
-
-        AnimatedVisibility(
-            visible = showSearchBar,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
-                placeholder = { Text(stringResource(R.string.log_viewer_search_placeholder)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = null
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(
-                                imageVector = Icons.Filled.Clear,
-                                contentDescription = stringResource(R.string.log_viewer_clear_search)
-                            )
-                        }
-                    }
-                },
-                singleLine = true
-            )
         }
     }
 }
