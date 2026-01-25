@@ -212,10 +212,8 @@
     <string name="home_kpm_version">Версія KPM</string>
     <string name="close_notice">Закрити</string>
     <string name="kernel_module_notice">Наступні функції модулів ядра були розроблені KernelPatch та модифіковані для включення функцій модулів ядра SukiSU Ultra</string>
-    <string name="home_ContributionCard_kernelsu">SukiSU Ultra з нетерпінням чекає</string>
     <string name="kpm_control_success">Успішно</string>
     <string name="kpm_control_failed">Невдача</string>
-    <string name="home_click_to_ContributionCard_kernelsu">У майбутньому SukiSU Ultra буде відносно незалежною гілкою KSU, але ми все ще вдячні офіційному KernelSU, MKSU та іншим за їхній внесок!</string>
     <string name="kpm_not_supported">Не підтримується (%s)</string>
     <string name="kpm_supported">Підтримується (%s)</string>
     <string name="kernel_not_patched">Ядро не пропатчене</string>

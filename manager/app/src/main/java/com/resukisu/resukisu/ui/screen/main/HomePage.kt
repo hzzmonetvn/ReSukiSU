@@ -120,7 +120,6 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.random.Random
 
 /**
  * @author ShirkNeko
@@ -267,7 +266,6 @@ fun HomePage(
 
                 // 链接卡片
                 if (!viewModel.isSimpleMode && !viewModel.isHideLinkCard) {
-                    ContributionCard()
                     DonateCard()
                     LearnMoreCard()
                 }
@@ -587,41 +585,6 @@ private fun StatusCard(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun ContributionCard() {
-    val uriHandler = LocalUriHandler.current
-    val links = listOf("https://github.com/ShirkNeko", "https://github.com/udochina")
-
-    ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHighest),
-        elevation = getCardElevation(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    val randomIndex = Random.nextInt(links.size)
-                    uriHandler.openUri(links[randomIndex])
-                }
-                .padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = stringResource(R.string.home_ContributionCard_kernelsu),
-                    style = MaterialTheme.typography.titleSmall,
-                )
-
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.home_click_to_ContributionCard_kernelsu),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
             }
         }
     }

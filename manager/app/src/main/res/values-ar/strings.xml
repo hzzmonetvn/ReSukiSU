@@ -211,10 +211,8 @@
     <string name="home_kpm_version">إصدار KPM</string>
     <string name="close_notice">إغلاق</string>
     <string name="kernel_module_notice">تم تطوير وظائف نواة الوحدة النمطية التالية بواسطة KernelPatch وتعديلها لتشمل وظائف نواة الوحدة النمطية لـ SukiSU Ultra</string>
-    <string name="home_ContributionCard_kernelsu">سوكيسو أولترا تتطلع إلى الأمام</string>
     <string name="kpm_control_success">نجحت</string>
     <string name="kpm_control_failed">فشل</string>
-    <string name="home_click_to_ContributionCard_kernelsu">وستشكل سوكيسو أولترا في المستقبل فرعا مستقلا نسبيا من فروع الوحدة، ولكننا لا نزال نقدر كيرنيل سو وموكسو الرسميين وما إلى ذلك. لإسهاماتهم!</string>
     <string name="kpm_not_supported">غير مدعوم (%s)</string>
     <string name="kpm_supported">إدعمنا (%s)</string>
     <string name="kernel_not_patched">النواة غير مصحوبة</string>
