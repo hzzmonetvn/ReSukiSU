@@ -91,9 +91,9 @@ import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.getKernelVersion
 import com.resukisu.resukisu.ui.component.DialogHandle
-import com.resukisu.resukisu.ui.component.settings.DropdownWidget
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
+import com.resukisu.resukisu.ui.component.settings.SettingsDropdownWidget
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.CardConfig.cardAlpha
 import com.resukisu.resukisu.ui.theme.getCardColors
@@ -373,7 +373,7 @@ fun InstallScreen(
                         if (!hasCustomSelected) partitionSelectionIndex = defaultIndex
 
                         if (displayPartitions.isNotEmpty()) {
-                            DropdownWidget(
+                            SettingsDropdownWidget(
                                 icon = Icons.Default.Edit,
                                 items = displayPartitions,
                                 selectedIndex = partitionSelectionIndex,

@@ -20,7 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ui.component.settings.DropdownWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsDropdownWidget
 import com.resukisu.resukisu.ui.util.listAppProfileTemplates
 import com.resukisu.resukisu.ui.util.setSepolicy
 import com.resukisu.resukisu.ui.viewmodel.getTemplateInfoById
@@ -44,13 +44,13 @@ fun TemplateConfig(
     val profileTemplates = listOf("None") + listAppProfileTemplates()
 //    val noTemplates = profileTemplates.isEmpty()
 
-    DropdownWidget(
+    SettingsDropdownWidget(
         icon = Icons.AutoMirrored.Rounded.Article,
         title = stringResource(R.string.profile_template),
         items = profileTemplates,
         selectedIndex = profileTemplates.indexOf(template) + 1,
         afterContent = { index ->
-            if (index == 0) return@DropdownWidget
+            if (index == 0) return@SettingsDropdownWidget
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ReadMore,
                 contentDescription = null,
@@ -66,13 +66,13 @@ fun TemplateConfig(
     ) { index ->
         if (index == 0) {
             template = ""
-            return@DropdownWidget
+            return@SettingsDropdownWidget
         }
 
         template = profileTemplates[index - 1]
 
         val templateInfo =
-            getTemplateInfoById(template) ?: return@DropdownWidget
+            getTemplateInfoById(template) ?: return@SettingsDropdownWidget
 
         if (setSepolicy(template, templateInfo.rules.joinToString("\n"))) {
             onProfileChange(

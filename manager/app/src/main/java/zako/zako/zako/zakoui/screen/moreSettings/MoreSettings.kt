@@ -87,8 +87,8 @@ import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.ui.MainActivity
 import com.resukisu.resukisu.ui.component.ksuIsValid
-import com.resukisu.resukisu.ui.component.settings.DropdownWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsBaseWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsDropdownWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsJumpPageWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
 import com.resukisu.resukisu.ui.component.settings.SplicedColumnGroup
@@ -322,7 +322,7 @@ private fun AppearanceSettings(
 
         item {
             // 主题模式
-            DropdownWidget(
+            SettingsDropdownWidget(
                 icon = Icons.Default.DarkMode,
                 title = stringResource(R.string.theme_mode),
                 items = state.themeOptions,

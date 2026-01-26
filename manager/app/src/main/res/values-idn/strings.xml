@@ -284,10 +284,6 @@ Tanamkan: Secara permanen memasang ke sistem</string>
     <string name="show_kpm_info">Sembunyikan Fungsi KPM</string>
     <string name="show_kpm_info_summary">Menyembunyikan informasi dan fungsi KPM di layar utama dan panel bawah</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">Pilih Mesin WebUI untuk Digunakan</string>
-    <string name="engine_auto_select">Pilih Otomatis</string>
-    <string name="engine_force_webuix">Paksa Gunakan WebUI X</string>
-    <string name="engine_force_ksu">Paksa Gunakan KSU WebUI</string>
     <string name="use_webuix_eruda">Sisipkan Eruda ke WebUI X</string>
     <string name="use_webuix_eruda_summary">Sisipkan konsol debug ke WebUI X untuk memudahkan debugging. Memerlukan debugging web diaktifkan.</string>
     <!-- DPI setting related strings -->

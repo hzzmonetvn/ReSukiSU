@@ -642,7 +642,7 @@ fun SplicedColumnGroup(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun DropdownWidget(
+fun SettingsDropdownWidget(
     icon: ImageVector? = null,
     iconPlaceholder: Boolean = true,
     title: String,
@@ -651,6 +651,7 @@ fun DropdownWidget(
     enabled: Boolean = true,
     isError: Boolean = false,
     hapticFeedbackType: HapticFeedbackType = HapticFeedbackType.ContextClick,
+    rowHeader: @Composable RowScope.() -> Unit = {},
     foreContent: @Composable BoxScope.() -> Unit = {},
     afterContent: @Composable RowScope.(Int) -> Unit = {},
     items: List<String>,
@@ -685,6 +686,7 @@ fun DropdownWidget(
             showDialog = true
         },
         hapticFeedbackType = hapticFeedbackType,
+        rowHeader = rowHeader,
         foreContent = foreContent,
         descriptionColumnContent = {
             val color = if (isError) MaterialTheme.colorScheme.error

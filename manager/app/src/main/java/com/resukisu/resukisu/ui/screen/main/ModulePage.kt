@@ -124,16 +124,12 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dergoogler.mmrl.platform.Platform
-import com.dergoogler.mmrl.platform.model.ModuleConfig
-import com.dergoogler.mmrl.platform.model.ModuleConfig.Companion.asModuleConfig
 import com.kyant.capsule.ContinuousRoundedRectangle
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ModuleRepoScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
-import com.resukisu.resukisu.KernelSUApplication
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
 import com.resukisu.resukisu.ksuApp
@@ -192,7 +188,7 @@ private enum class ShortcutType {
 fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: HazeState?) {
     val context = LocalContext.current
     val viewModel = viewModel<ModuleViewModel>(
-        viewModelStoreOwner = context.applicationContext as KernelSUApplication
+        viewModelStoreOwner = ksuApp
     )
     val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
     val snackBarHost = LocalSnackbarHost.current
@@ -425,7 +421,7 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: H
 
                         if (hasWebUi) {
                             try {
-                                val wxEngine = Intent(context, WebUIXActivity::class.java)
+                                val webuixEngine = Intent(context, WebUIXActivity::class.java)
                                     .setData("kernelsu://webuix/$id".toUri())
                                     .putExtra("id", id)
                                     .putExtra("name", name)
@@ -435,32 +431,30 @@ fun ModulePage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: H
                                     .putExtra("id", id)
                                     .putExtra("name", name)
 
-                                val config = try {
-                                    id.asModuleConfig
-                                } catch (e: Exception) {
-                                    Log.e("ModuleScreen", "Failed to get config from id: $id", e)
-                                    null
+                                val moduleSettings =
+                                    context.getSharedPreferences("module_settings", MODE_PRIVATE)
+                                val moduleEngine =
+                                    moduleSettings.getString(id + "_webui", "default") ?: "default"
+
+                                var defaultEngine =
+                                    prefs.getString("webui_engine", "custom") ?: "custom"
+
+                                if (defaultEngine == "default" || defaultEngine == "wx") { // 旧版兼容
+                                    prefs.edit(commit = true) {
+                                        putString("webui_engine", "webuix")
+                                    }
+                                    defaultEngine = "webuix"
                                 }
 
-                                val globalEngine = prefs.getString("webui_engine", "default") ?: "default"
-                                val moduleEngine = config?.getWebuiEngine(context)
-                                val selectedEngine = when (globalEngine) {
-                                    "wx" -> wxEngine
+                                val selectedEngine =
+                                    when (moduleEngine) { // 优先处理模块独立设置，如果为默认，则使用全局设置，参见ModuleWebUIEngineScreen
+                                        "webuix" -> webuixEngine
                                     "ksu" -> ksuEngine
-                                    "default" -> {
-                                        when (moduleEngine) {
-                                            "wx" -> wxEngine
+                                        else -> when (defaultEngine) {
+                                            "webuix" -> webuixEngine
                                             "ksu" -> ksuEngine
-                                            else -> {
-                                                if (Platform.isAlive) {
-                                                    wxEngine
-                                                } else {
-                                                    ksuEngine
-                                                }
-                                            }
+                                            else -> ksuEngine
                                         }
-                                    }
-                                    else -> ksuEngine
                                 }
                                 context.startActivity(selectedEngine)
                             } catch (e: Exception) {
@@ -1616,8 +1610,7 @@ fun ModuleItemPreview() {
         metamodule = true,
         actionIconPath = null,
         webUiIconPath = null,
-        dirId = "dirId",
-        config = ModuleConfig()
+        dirId = "dirId"
     )
     ModuleItem(EmptyDestinationsNavigator, module, "", {}, {}, {}, {}, {})
 }

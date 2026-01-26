@@ -102,9 +102,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ramcosta.composedestinations.generated.destinations.AppProfileScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.resukisu.resukisu.KernelSUApplication
 import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
+import com.resukisu.resukisu.ksuApp
 import com.resukisu.resukisu.ui.component.FabMenuPresets
 import com.resukisu.resukisu.ui.component.SearchAppBar
 import com.resukisu.resukisu.ui.component.VerticalExpandableFab
@@ -137,7 +137,7 @@ data class BottomSheetMenuItem(
 fun SuperUserPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState: HazeState?) {
     val context = LocalContext.current
     val viewModel = viewModel<SuperUserViewModel>(
-        viewModelStoreOwner = context.applicationContext as KernelSUApplication
+        viewModelStoreOwner = ksuApp
     )
     val scope = rememberCoroutineScope()
     val scrollBehavior = pinnedScrollBehavior()

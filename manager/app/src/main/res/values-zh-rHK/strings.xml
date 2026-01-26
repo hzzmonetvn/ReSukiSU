@@ -278,10 +278,6 @@
     <string name="show_kpm_info">隱藏 KPM 功能</string>
     <string name="show_kpm_info_summary">喺主頁同底欄隱藏 KPM 相關功能同信息</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">選擇使用嘅 WebUI 引擎</string>
-    <string name="engine_auto_select">自動選擇</string>
-    <string name="engine_force_webuix">強制使用 WebUI X</string>
-    <string name="engine_force_ksu">強制使用 KSU 嘅 WebUI</string>
     <string name="use_webuix_eruda">將 Eruda 注入 WebUI X</string>
     <string name="use_webuix_eruda_summary">喺 WebUI X 中注入調試控制台，使調試更容易,需要啟用 WebView 調試</string>
     <!-- DPI setting related strings -->
@@ -500,7 +496,7 @@
     <string name="susfs_edit_sus_path">編輯 SuS 路徑</string>
     <string name="edit_kstat_statically_title">編輯 Kstat 靜態配置</string>
     <string name="edit_kstat_path_title">編輯 Kstat 路徑</string>
-    <string name="susfs_save">儲存</string>
+    <string name="save">儲存</string>
     <string name="edit">編輯</string>
     <string name="delete">刪除</string>
     <string name="update">更新</string>

@@ -279,10 +279,6 @@
     <string name="show_kpm_info">Приховати функцію KPM</string>
     <string name="show_kpm_info_summary">Приховує інформацію та функцію KPM на головному екрані та в нижній панелі</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">Виберіть рушій WebUI для використання</string>
-    <string name="engine_auto_select">Автоматичний вибір</string>
-    <string name="engine_force_webuix">Примусово використовувати WebUI X</string>
-    <string name="engine_force_ksu">Примусово використовувати KSU WebUI</string>
     <string name="use_webuix_eruda">Впровадити Eruda у WebUI X</string>
     <string name="use_webuix_eruda_summary">Впровадити консоль налагодження у WebUI X для полегшення налагодження. Потребує увімкненого веб-налагодження.</string>
     <!-- DPI setting related strings -->

@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.WebAsset
 import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material.icons.rounded.RemoveModerator
+import androidx.compose.material.icons.rounded.ViewInAr
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -91,6 +92,7 @@ import com.maxkeppeler.sheets.list.models.ListOption
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LogViewerScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ModuleConfigScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.MoreSettingsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.UmountManagerScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -105,7 +107,7 @@ import com.resukisu.resukisu.ui.component.ksuIsValid
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
 import com.resukisu.resukisu.ui.component.rememberLoadingDialog
-import com.resukisu.resukisu.ui.component.settings.DropdownWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsDropdownWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsJumpPageWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
 import com.resukisu.resukisu.ui.component.settings.SplicedColumnGroup
@@ -145,6 +147,13 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
         mutableStateOf(
             prefs.getString("webui_engine", "default") ?: "default"
         )
+    }
+
+    if (selectedEngine == "default" || selectedEngine == "wx") { // 旧版兼容
+        prefs.edit(commit = true) {
+            putString("webui_engine", "webuix")
+        }
+        selectedEngine = "webuix"
     }
 
     Scaffold(
@@ -238,7 +247,7 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
                                 "managed" -> stringResource(id = R.string.feature_status_managed_summary)
                                 else -> stringResource(id = R.string.settings_disable_su_summary)
                             }
-                            DropdownWidget(
+                            SettingsDropdownWidget(
                                 icon = Icons.Rounded.RemoveModerator,
                                 title = stringResource(id = R.string.settings_disable_su),
                                 description = suSummary,
@@ -296,7 +305,7 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
                                 "managed" -> stringResource(id = R.string.feature_status_managed_summary)
                                 else -> stringResource(id = R.string.settings_disable_kernel_umount_summary)
                             }
-                            DropdownWidget(
+                            SettingsDropdownWidget(
                                 icon = Icons.Rounded.RemoveCircle,
                                 title = stringResource(id = R.string.settings_disable_kernel_umount),
                                 description = umountSummary,
@@ -356,7 +365,7 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
                                 "managed" -> stringResource(id = R.string.feature_status_managed_summary)
                                 else -> stringResource(id = R.string.settings_disable_sulog_summary)
                             }
-                            DropdownWidget(
+                            SettingsDropdownWidget(
                                 icon = Icons.Default.RemoveRedEye,
                                 title = stringResource(id = R.string.settings_disable_sulog),
                                 description = suLogSummary,
@@ -437,26 +446,23 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
 
                     if (ksuIsValid()) {
                         item {
-                            // WebUI引擎选择
-                            DropdownWidget(
+                            // WebUI默认引擎选择
+                            SettingsDropdownWidget(
                                 icon = Icons.Filled.WebAsset,
-                                title = stringResource(R.string.use_webuix),
+                                title = stringResource(R.string.select_default_webui_engine),
                                 items = listOf(
-                                    stringResource(R.string.engine_auto_select),
-                                    stringResource(R.string.engine_force_webuix),
-                                    stringResource(R.string.engine_force_ksu)
+                                    stringResource(R.string.webui_engine_webuix),
+                                    stringResource(R.string.webui_engine_ksu),
                                 ),
                                 selectedIndex = when (selectedEngine) {
-                                    "default" -> 0
-                                    "wx" -> 1
-                                    "ksu" -> 2
+                                    "webuix" -> 0
+                                    "ksu" -> 1
                                     else -> throw UnsupportedOperationException("Unknown engine: $selectedEngine")
                                 },
                                 onSelectedIndexChange = { index ->
                                     val engine = when (index) {
-                                        0 -> "default"
-                                        1 -> "wx"
-                                        2 -> "ksu"
+                                        0 -> "webuix"
+                                        1 -> "ksu"
                                         else -> throw UnsupportedOperationException("Unknown engine index: $index")
                                     }
                                     selectedEngine = engine
@@ -464,9 +470,18 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
                                 }
                             )
                         }
-                    }
 
-                    if (ksuIsValid()) {
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.Rounded.ViewInAr,
+                                title = stringResource(R.string.config_modules_webui),
+                                description = stringResource(R.string.config_modules_webui_description),
+                                onClick = {
+                                    navigator.navigate(ModuleConfigScreenDestination)
+                                }
+                            )
+                        }
+
                         item {
                             // Web调试和Web X Eruda 开关
                             var enableWebDebugging by rememberSaveable {
@@ -488,7 +503,7 @@ fun SettingsPage(navigator: DestinationsNavigator, bottomPadding: Dp, hazeState:
                             )
 
                             AnimatedVisibility(
-                                visible = enableWebDebugging && selectedEngine == "wx",
+                                visible = enableWebDebugging && selectedEngine != "ksu",
                                 enter = fadeIn() + expandVertically(),
                                 exit = fadeOut() + shrinkVertically()
                             ) {

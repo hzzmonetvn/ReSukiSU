@@ -41,7 +41,7 @@ import com.resukisu.resukisu.R
 import com.resukisu.resukisu.profile.Capabilities
 import com.resukisu.resukisu.profile.Groups
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
-import com.resukisu.resukisu.ui.component.settings.DropdownWidget
+import com.resukisu.resukisu.ui.component.settings.SettingsDropdownWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsJumpPageWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsTextFieldWidget
 import com.resukisu.resukisu.ui.component.settings.SplicedColumnGroup
@@ -321,7 +321,7 @@ private fun UidPanel(uid: Int, label: String, onUidChange: (Int) -> Unit) {
 fun MountNameSpacePanel(
     profile: Natives.Profile, onMntNamespaceChange: (namespaceType: Int) -> Unit
 ) {
-    DropdownWidget(
+    SettingsDropdownWidget(
         iconPlaceholder = false,
         title = stringResource(id = R.string.profile_namespace), items = listOf(
             stringResource(id = R.string.profile_namespace_inherited),

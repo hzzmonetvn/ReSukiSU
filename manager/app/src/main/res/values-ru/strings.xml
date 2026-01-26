@@ -290,10 +290,6 @@
     <string name="show_kpm_info">Скрыть статус KPM</string>
     <string name="show_kpm_info_summary">Скрывать информацию и функции KPM на домашней странице и панели навигации</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">Движок WebUI</string>
-    <string name="engine_auto_select">Автовыбор</string>
-    <string name="engine_force_webuix">WebUI X</string>
-    <string name="engine_force_ksu">KSU WebUI</string>
     <string name="use_webuix_eruda">Вставить Eruda в WebUI X</string>
     <string name="use_webuix_eruda_summary">Вставьте консоль отладки в WebUI X для упрощения отладки. Для этого требуется включение веб-отладки.</string>
     <!-- DPI setting related strings -->
@@ -512,7 +508,7 @@
     <string name="susfs_edit_sus_path">Редактировать путь SUS</string>
     <string name="edit_kstat_statically_title">Изменить статическую конфигурацию Kstat</string>
     <string name="edit_kstat_path_title">Редактировать путь Kstat</string>
-    <string name="susfs_save">Сохранить</string>
+    <string name="save">Сохранить</string>
     <string name="edit">Редактировать</string>
     <string name="delete">Удалить</string>
     <string name="update">Обновить</string>

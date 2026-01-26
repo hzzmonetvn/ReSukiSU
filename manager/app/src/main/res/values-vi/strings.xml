@@ -295,10 +295,6 @@
     <string name="show_kpm_info">Ẩn chức năng KPM</string>
     <string name="show_kpm_info_summary">Ẩn thông tin và chức năng của KPM ở trang chủ và thanh điều hướng</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">Tuỳ chỉnh WebUI</string>
-    <string name="engine_auto_select">Tự động chọn</string>
-    <string name="engine_force_webuix">Sử dụng WebUI X</string>
-    <string name="engine_force_ksu">Sử dụng KSU WebUI</string>
     <string name="use_webuix_eruda">Tiêm Eruda vào WebUI X</string>
     <string name="use_webuix_eruda_summary">Chèn bảng điều khiển gỡ lỗi vào WebUI X để gỡ lỗi dễ dàng hơn. Yêu cầu bật gỡ lỗi Web</string>
     <!-- DPI setting related strings -->
@@ -518,7 +514,7 @@
     <string name="susfs_edit_sus_path">Chỉnh sửa Đường dẫn SuS</string>
     <string name="edit_kstat_statically_title">Chỉnh sửa cấu hình Kstat tĩnh</string>
     <string name="edit_kstat_path_title">Chỉnh sửa Đường dẫn Kstat</string>
-    <string name="susfs_save">Lưu</string>
+    <string name="save">Lưu</string>
     <string name="edit">Chỉnh sửa</string>
     <string name="delete">Xoá</string>
     <string name="update">Cập nhật</string>

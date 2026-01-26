@@ -12,6 +12,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.edit
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
@@ -68,11 +69,31 @@ object Shortcut {
     ) {
         val shortcutId = "module_webui_$moduleId"
 
+        val webuixEngine = Intent(context, WebUIXActivity::class.java)
+        val ksuEngine = Intent(context, WebUIActivity::class.java)
+
         val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
-        val globalEngine = prefs.getString("webui_engine", "default") ?: "default"
-        val selectedEngine = when (globalEngine) {
-            "wx","default" -> Intent(context, WebUIXActivity::class.java)
-            else -> Intent(context, WebUIActivity::class.java)
+        val moduleSettings = context.getSharedPreferences("module_settings", MODE_PRIVATE)
+        val moduleEngine = moduleSettings.getString(moduleId + "_webui", "default") ?: "default"
+
+        var defaultEngine = prefs.getString("webui_engine", "custom") ?: "custom"
+
+        if (defaultEngine == "default" || defaultEngine == "wx") { // 旧版兼容
+            prefs.edit(commit = true) {
+                putString("webui_engine", "webuix")
+            }
+            defaultEngine = "webuix"
+        }
+
+        val selectedEngine =
+            when (moduleEngine) { // 优先处理模块独立设置，如果为默认，则使用全局设置，参见ModuleWebUIEngineScreen
+                "webuix" -> webuixEngine
+                "ksu" -> ksuEngine
+                else -> when (defaultEngine) {
+                    "webuix" -> webuixEngine
+                    "ksu" -> ksuEngine
+                    else -> ksuEngine
+                }
         }
 
         val shortcutIntent = selectedEngine.apply {

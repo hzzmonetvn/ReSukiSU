@@ -289,10 +289,6 @@
     <string name="show_kpm_info">Tampilkan fungsi KPM</string>
     <string name="show_kpm_info_summary">Tampilkan fungsi informasi KPM dan menu KPM di bilah navigasi</string>
     <!-- Webui X settings -->
-    <string name="use_webuix">Pilih jenis webUI untuk digunakan</string>
-    <string name="engine_auto_select">Otomatis memilih</string>
-    <string name="engine_force_webuix">Paksa menggunakan WebUI X</string>
-    <string name="engine_force_ksu">Penggunaan wajib KSU WebUI</string>
     <string name="use_webuix_eruda">Suntik Eruda ke WebUI X</string>
     <string name="use_webuix_eruda_summary">Suntikkan konsol debug ke dalam WebUI X untuk mempermudah proses debugging. Memerlukan pengaktifan web debugging.</string>
     <!-- DPI setting related strings -->
@@ -511,7 +507,7 @@
     <string name="susfs_edit_sus_path">Edit Jalur SUS</string>
     <string name="edit_kstat_statically_title">Edit Konfigurasi Statis Kstat</string>
     <string name="edit_kstat_path_title">Edit Jalur Kstat</string>
-    <string name="susfs_save">Simpan</string>
+    <string name="save">Simpan</string>
     <string name="edit">Edit</string>
     <string name="delete">Hapus</string>
     <string name="update">Perbarui</string>
