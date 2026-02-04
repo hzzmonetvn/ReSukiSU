@@ -455,6 +455,11 @@ enum DynamicManagerOp {
         #[arg(value_parser = dynamic_manager::parse_hash)]
         hash: [u8; 64],
     },
+    /// Set the signature of the dynamic manager for apk
+    SetApk {
+        /// the apk path
+        apk: String,
+    },
     /// Clear the dynamic manager
     Clear,
 }
@@ -770,6 +775,16 @@ pub fn run() -> Result<()> {
                     let (size, hash) = ksucalls::dynamic_manager_get()?;
                     println!("size: {}, hash: {}", size, String::from_utf8_lossy(&hash));
                     Ok(())
+                }
+                DynamicManagerOp::SetApk { apk } => {
+                    let sign = apk_sign::get_apk_signature(&apk)?;
+
+                    let bytes = sign.1.as_bytes();
+
+                    let mut hash = [0u8; 64];
+                    hash.copy_from_slice(bytes);
+
+                    dynamic_manager::set(sign.0, hash)
                 }
                 DynamicManagerOp::Clear => ksucalls::dynamic_manager_clear(),
             },
