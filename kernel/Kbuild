@@ -51,11 +51,7 @@ KSU_VERSION_API := 4.1.0
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
 CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
 
-ifeq ($(findstring $(srctree),$(src)),$(srctree))
-  KSU_SRC := $(src)
-else
-  KSU_SRC := $(srctree)/$(src)
-endif
+KSU_SRC := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
 
