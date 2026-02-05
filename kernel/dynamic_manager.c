@@ -80,11 +80,11 @@ int ksu_handle_dynamic_manager(struct ksu_dynamic_manager_cmd *cmd)
         }
 
         dynamic_manager.size = cmd->size;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
-        strscpy(dynamic_manager.hash, cmd->hash, sizeof(dynamic_manager.hash));
-#else
-        strlcpy(dynamic_manager.hash, cmd->hash, sizeof(dynamic_manager.hash));
-#endif
+        // userspace always put an char[64] to our
+        // we just use memcpy to copy memory, and flag [64] to \0 by ourselves
+        memcpy(dynamic_manager.hash, cmd->hash, 64);
+        dynamic_manager.hash[64] = '\0';
+
         dynamic_manager.is_set = 1;
 
         track_throne(false);
@@ -96,11 +96,8 @@ int ksu_handle_dynamic_manager(struct ksu_dynamic_manager_cmd *cmd)
     case DYNAMIC_MANAGER_OP_GET:
         if (dynamic_manager.is_set) {
             cmd->size = dynamic_manager.size;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
-            strscpy(cmd->hash, dynamic_manager.hash, sizeof(cmd->hash));
-#else
-            strlcpy(cmd->hash, dynamic_manager.hash, sizeof(cmd->hash));
-#endif
+            memcpy(cmd->hash, dynamic_manager.hash,
+                   64); // just copy [64] is enough, userspace will handle that
             ret = 0;
         } else {
             ret = -ENODATA;
