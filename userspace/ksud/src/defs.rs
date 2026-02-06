@@ -42,8 +42,6 @@ mod android {
     pub const BACKUP_FILENAME: &str = "stock_image.sha1";
     pub const UMOUNT_CONFIG_PATH: &str = concatcp!(WORKING_DIR, ".umount");
 
-    pub const EXEC_STAGE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
-
     pub const DYNAMIC_MANAGER: &str = concatcp!(WORKING_DIR, ".dynamic_manager");
 }
 
