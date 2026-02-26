@@ -43,7 +43,7 @@ obj-$(CONFIG_KSU) += kernelsu.o
 
 obj-$(CONFIG_KPM) += kpm/
 
-REPO_NAME := ReSukiSU
+REPO_NAME := HzzMonet
 
 KDIR := $(KDIR)
 
