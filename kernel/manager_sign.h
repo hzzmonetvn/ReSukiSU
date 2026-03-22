@@ -56,6 +56,21 @@
 #define EXPECTED_HASH_YUKI2 \
     "39559b380d4c0191eed81b7eba61533b6a2f247bc55bceba4259e983673f58b7"
 
+// Kaminarich/KamiSU
+#define EXPECTED_SIZE_YUKI2 0x2e8
+#define EXPECTED_HASH_YUKI2 \
+    "13c415105fad7b798e5584798d82ea334729f0c24de7b9d4cd2f2e1b062eb566"
+
+// KernelSU-pershoot/KernelSU-pershoot
+#define EXPECTED_SIZE_pershoot 0x338
+#define EXPECTED_HASH_pershoot \
+    "f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f"   
+    
+// kingfinik98/VorteX (VorteXSU)
+#define EXPECTED_SIZE_VORTEX 0x317
+#define EXPECTED_HASH_VORTEX \
+    "4d3c9a3f40b4acab5d89d74eb5f2edf92a6af71a366b9484de507220739d025b"
+
 typedef struct {
     unsigned size;
     const char *sha256;

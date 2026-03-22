@@ -39,6 +39,10 @@ static apk_sign_key_t apk_sign_keys[] = {
     { EXPECTED_SIZE_WILD, EXPECTED_HASH_WILD }, // Wild_KSU
     { EXPECTED_SIZE_YUKI1, EXPECTED_HASH_YUKI1 }, // YUKISU
     { EXPECTED_SIZE_YUKI2, EXPECTED_HASH_YUKI2 }, // YUKISU
+    { EXPECTED_SIZE_pershoot, EXPECTED_HASH_pershoot }, // KernelSU-pershoot/KernelSU-pershoot
+    { EXPECTED_SIZE_VORTEX, EXPECTED_HASH_VORTEX }, // kingfinik98/VorteX
+    { EXPECTED_SIZE_KAMISU, EXPECTED_HASH_KAMISU }, // Kaminarich/KamiSU
+    
 #ifdef EXPECTED_SIZE
     { EXPECTED_SIZE, EXPECTED_HASH }, // Custom
 #endif
