@@ -37,6 +37,7 @@ static apk_sign_key_t apk_sign_keys[] = {
     { EXPECTED_SIZE_MAMBO, EXPECTED_HASH_MAMBO }, // RapliVx/KernelSU
     { EXPECTED_SIZE_NEXT, EXPECTED_HASH_NEXT }, // KernelSU-Next
     { EXPECTED_SIZE_WILD, EXPECTED_HASH_WILD }, // Wild_KSU
+    { EXPECTED_SIZE_YUKI1, EXPECTED_HASH_YUKI1 }, // YUKISU
 #ifdef EXPECTED_SIZE
     { EXPECTED_SIZE, EXPECTED_HASH }, // Custom
 #endif

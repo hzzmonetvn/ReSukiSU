@@ -39,11 +39,19 @@
 // KernelSU-Next
 #define EXPECTED_SIZE_NEXT 0x3e6
 #define EXPECTED_HASH_NEXT                                                  \
-    "f415f4ed9435427e1fdf7f1fccd4dbc07b3d6b8751e4dbcec6f19671f427870b"   
+    "79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7"   
 // WildKsu
 #define EXPECTED_SIZE_WILD 0x381
 #define EXPECTED_HASH_WILD                                                  \
     "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4"     
+// yukisu
+#define EXPECTED_SIZE_YUKI1 0x29c
+#define EXPECTED_HASH_WILD                                                  \
+    "6eafa78ef61acedcb19facd0387e42046a6614126782620244def709f9a84c7e"     
+// YUKISU
+#define EXPECTED_SIZE_YUKI2 0x29c
+#define EXPECTED_HASH_YUKI2                                                  \
+    "39559b380d4c0191eed81b7eba61533b6a2f247bc55bceba4259e983673f58b7"         
 typedef struct {
     unsigned size;
     const char *sha256;
