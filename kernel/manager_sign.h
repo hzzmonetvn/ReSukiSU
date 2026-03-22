@@ -46,7 +46,7 @@
     "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4"     
 // yukisu
 #define EXPECTED_SIZE_YUKI1 0x29c
-#define EXPECTED_HASH_WILD                                                  \
+#define EXPECTED_HASH_YUKI1                                                  \
     "6eafa78ef61acedcb19facd0387e42046a6614126782620244def709f9a84c7e"     
 // YUKISU
 #define EXPECTED_SIZE_YUKI2 0x29c
