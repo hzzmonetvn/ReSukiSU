@@ -123,7 +123,7 @@ NativeBridge(getAppProfile, jobject, jstring pkg, jint uid) {
 	profile.version = KSU_APP_PROFILE_VER;
 
 	strcpy(profile.key, key);
-	profile.current_uid = uid;
+	profile.curr_uid = uid;
 
 	bool useDefaultProfile = get_app_profile(&profile) != 0;
 
@@ -148,7 +148,7 @@ NativeBridge(getAppProfile, jobject, jstring pkg, jint uid) {
 	jfieldID umountModulesField = GetEnvironment()->GetFieldID(env, cls, "umountModules", "Z");
 
 	GetEnvironment()->SetObjectField(env, obj, keyField, GetEnvironment()->NewStringUTF(env, profile.key));
-	GetEnvironment()->SetIntField(env, obj, currentUidField, profile.current_uid);
+	GetEnvironment()->SetIntField(env, obj, currentUidField, profile.curr_uid);
 
 	if (useDefaultProfile) {
 		// no profile found, so just use default profile:
@@ -250,7 +250,7 @@ NativeBridge(setAppProfile, jboolean, jobject profile) {
 
 	strcpy(p.key, p_key);
 	p.allow_su = allowSu;
-	p.current_uid = currentUid;
+	p.curr_uid = currentUid;
 
 	if (allowSu) {
 		p.rp_config.use_default = GetEnvironment()->GetBooleanField(env, profile, rootUseDefaultField);
