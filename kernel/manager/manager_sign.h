@@ -71,6 +71,11 @@
 #define EXPECTED_HASH_VORTEX \
     "4d3c9a3f40b4acab5d89d74eb5f2edf92a6af71a366b9484de507220739d025b"
 
+// AgnesSU
+#define EXPECTED_SIZE_AGNESSU 0x364
+#define EXPECTED_HASH_AGNESSU \
+    "2d19acc8d27c1285e2ca04ffb60fbcb0d44b05daf2cfdbf5f7101aa17e2dc849"    
+    
 typedef struct {
     unsigned size;
     const char *sha256;
