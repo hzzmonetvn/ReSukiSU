@@ -108,7 +108,7 @@
     <string name="profile_umount_modules">卸载模块</string>
     <string name="failed_to_update_app_profile">为 %s 更新 App Profile 失败</string>
     <string name="debug_version_notice">"你正在使用管理器的 DEBUG 构建，如果你不知道什么是 DEBUG 构建，请立即切换至 RELEASE 构建"</string>
-    <string name="unofficial_version_notice">您使用的管理器并非 %s 官方管理器，您可能无法获得权限。</string>
+    <string name="unofficial_version_notice">"您使用的管理器并非 %s 官方管理器，您可能无法获得权限。"</string>
     <string name="conflict_with_apatch">检测到 APatch, 所有功能均可能停止工作</string>
     <string name="settings_umount_modules_default">默认卸载模块</string>
     <string name="settings_umount_modules_default_summary">App Profile 中\"卸载模块\"的全局默认值，如果启用，将会为没有设置 Profile 的应用移除所有模块针对系统的修改。</string>
@@ -151,6 +151,8 @@
     <string name="settings_check_update">更新提醒</string>
     <string name="settings_check_update_summary">自动检查模块和管理器更新</string>
     <string name="grant_root_failed">获取 root 失败！</string>
+    <string name="home_pr_build_warning">当前为 PR 调试构建，请勿在生产环境中使用！</string>
+    <string name="home_pr_kernel_warning">当前内核包含 PR 签名支持，这不是一个生产内核！</string>
     <string name="action">执行</string>
     <string name="close">关闭</string>
     <string name="direct_install">直接安装（推荐）</string>
