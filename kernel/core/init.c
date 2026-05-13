@@ -136,6 +136,17 @@ bool allow_shell = false;
 int __init kernelsu_init(void)
 {
     pr_info("Initialized on: %s (%s) with driver version: %u\n", UTS_RELEASE, UTS_MACHINE, KSU_VERSION);
+#if defined(KSU_COMPAT_NON_EXPORTED_POLICY_RWLOCK) || defined(KSU_COMPAT_NON_EXPORTED_SEL_MUTEX)
+    pr_alert("*************************************************************");
+    pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+    pr_alert("**                                                         **");
+    pr_alert("**          Enable Unsafe memory access for SELinux        **");
+    pr_alert("**                You maybe face Kernel Panic              **");
+    pr_alert("**                                                         **");
+    pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+    pr_alert("*************************************************************");
+#endif
+
 #ifdef MODULE
     ksu_late_loaded = (current->pid != 1);
 #else
@@ -215,7 +226,7 @@ int __init kernelsu_init(void)
         ksu_file_wrapper_init();
 
         ksu_boot_completed = true;
-        track_throne(false, true, false);
+        track_throne(TRACK_THRONE_FORCE_SEARCH_MGR);
 
         if (!getenforce()) {
             pr_info("Permissive SELinux, enforcing\n");
