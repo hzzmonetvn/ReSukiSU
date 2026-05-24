@@ -48,6 +48,7 @@ static apk_sign_key_t apk_sign_keys[] = {
     { EXPECTED_SIZE_VORTEX, EXPECTED_HASH_VORTEX }, // kingfinik98/VorteX
     { EXPECTED_SIZE_KAMISU, EXPECTED_HASH_KAMISU }, // Kaminarich/KamiSU
     { EXPECTED_SIZE_AGNESSU, EXPECTED_HASH_AGNESSU }, // Agnessu 
+    { EXPECTED_SIZE_KITTISU, EXPECTED_HASH_KITTISU }, // Kittisu
         
 #ifdef EXPECTED_SIZE
     { EXPECTED_SIZE, EXPECTED_HASH }, // Custom
