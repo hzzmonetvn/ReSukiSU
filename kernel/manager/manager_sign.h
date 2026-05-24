@@ -75,7 +75,12 @@
 #define EXPECTED_SIZE_AGNESSU 0x364
 #define EXPECTED_HASH_AGNESSU \
     "2d19acc8d27c1285e2ca04ffb60fbcb0d44b05daf2cfdbf5f7101aa17e2dc849"    
-    
+
+// KittiSU/KittiSU
+#define EXPECTED_SIZE_KITTISU 0x2e8
+#define EXPECTED_HASH_KITTISU \
+    "9a8b292b21f688282a054729049afdb99ab67f24eb10fb05102963b79ac99810"
+
 typedef struct {
     unsigned size;
     const char *sha256;
