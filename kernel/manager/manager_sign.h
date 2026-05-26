@@ -77,9 +77,9 @@
     "2d19acc8d27c1285e2ca04ffb60fbcb0d44b05daf2cfdbf5f7101aa17e2dc849"    
 
 // KittiSU/KittiSU
-#define EXPECTED_SIZE_KITTISU 0x2e8
+#define EXPECTED_SIZE_KITTISU 0x0390
 #define EXPECTED_HASH_KITTISU \
-    "9a8b292b21f688282a054729049afdb99ab67f24eb10fb05102963b79ac99810"
+    "8a38ea45034a145e29234c4927743b088ef502441f8d24583a1a18f20e4c879a"
 
 typedef struct {
     unsigned size;
