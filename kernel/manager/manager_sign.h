@@ -64,8 +64,8 @@
 // KernelSU-pershoot/KernelSU-pershoot
 #define EXPECTED_SIZE_pershoot 0x338
 #define EXPECTED_HASH_pershoot \
-    "f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f"   
-    
+    "f26471a28031130362bce7eebffb9a0b8afc3095f163ce0c75a309f03b644a1f"
+
 // kingfinik98/VorteX (VorteXSU)
 #define EXPECTED_SIZE_VORTEX 0x317
 #define EXPECTED_HASH_VORTEX \
@@ -74,7 +74,7 @@
 // AgnesSU
 #define EXPECTED_SIZE_AGNESSU 0x364
 #define EXPECTED_HASH_AGNESSU \
-    "2d19acc8d27c1285e2ca04ffb60fbcb0d44b05daf2cfdbf5f7101aa17e2dc849"    
+    "2d19acc8d27c1285e2ca04ffb60fbcb0d44b05daf2cfdbf5f7101aa17e2dc849"
 
 // KittiSU/KittiSU
 #define EXPECTED_SIZE_KITTISU 0x0390
