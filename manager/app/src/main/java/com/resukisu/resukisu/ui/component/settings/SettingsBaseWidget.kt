@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,11 +60,13 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.resukisu.resukisu.ui.component.settings.material3internal.rememberAnimatedShape
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.renderBackgroundBlur
+import org.koin.compose.koinInject
 
 /**
  * A [CompositionLocal] that provides the dynamically calculated [Shape] for items
@@ -79,6 +83,7 @@ val LocalSegmentedItemShape = compositionLocalOf<Shape> { RoundedCornerShape(16.
  * @param icon The [ImageVector] to be displayed at the start of the widget.
  * @param iconColor The color applied to the [icon].
  * @param iconPlaceholder If true, maintains a consistent leading space even when [icon] is null.
+ * @param iconSize The size applied to the [icon].
  * @param title The primary headline text of the widget.
  * @param titleStyle The [TextStyle] applied to the [title].
  * @param description Optional supporting text displayed below the title.
@@ -90,7 +95,7 @@ val LocalSegmentedItemShape = compositionLocalOf<Shape> { RoundedCornerShape(16.
  * If [onClick] is not null, this also controls clickability.
  * @param isError If true, applies the error color to the description text.
  * @param selected If true, highlights the widget with a primary container background.
- * @param renderBackgroundBlur If true, this composable will renderBackgroundBlur.
+ * @param isOnBackground If true, this composable will renderBackgroundBlur, and will process cardAlpha.
  * @param fillMaxWidth If true, this composable will fill max width.
  * @param onClick Callback to be invoked when the widget is clicked. If null, the widget is not clickable.
  * @param onLongClick Callback to be invoked when the widget is LONG CLICKED. If null, the widget is not clickable.
@@ -100,6 +105,7 @@ val LocalSegmentedItemShape = compositionLocalOf<Shape> { RoundedCornerShape(16.
  * @param trailingContent A composable slot for trailing content, e.g. switches, checkboxes, or arrows.
  * @param containerColor Custom container color, if provided, selected/isError will be ignored.
  */
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsBaseWidget(
@@ -107,25 +113,30 @@ fun SettingsBaseWidget(
     icon: ImageVector? = null,
     iconColor: Color? = null,
     iconPlaceholder: Boolean = true,
+    iconSize: Dp = 24.dp,
     title: String?,
     titleStyle: TextStyle = MaterialTheme.typography.titleMedium,
     description: String? = null,
-    descriptionColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    descriptionColor: Color? = null,
     descriptionStyle: TextStyle = MaterialTheme.typography.bodyMedium,
     enabled: Boolean = true,
     isError: Boolean = false,
     selected: Boolean = false,
-    renderBackgroundBlur: Boolean = true,
+    isOnBackground: Boolean = true,
     fillMaxWidth: Boolean = true,
     onClick: ((Offset) -> Unit)? = null,
     onLongClick: ((Offset) -> Unit)? = null,
     clickHaptic: HapticFeedbackType? = HapticFeedbackType.ContextClick,
     leadingContent: (@Composable () -> Unit)? = null,
-    foreContent: @Composable BoxScope.() -> Unit = {},
+    foreContent: @Composable RowScope.() -> Unit = {},
     descriptionColumnContent: (@Composable ColumnScope.() -> Unit)? = null,
     containerColor: Color? = null,
+    containerAlpha: Float? = null,
     trailingContent: (@Composable BoxScope.(interactionSource: MutableInteractionSource) -> Unit)? = null,
 ) {
+    val themeConfig: ThemeConfig = koinInject()
+    val cardConfig: CardConfig = koinInject()
+    val resolvedContainerAlpha = containerAlpha ?: cardConfig.cardAlpha
     val hapticFeedback = LocalHapticFeedback.current
     val alpha = if (enabled) 1f else 0.38f
 
@@ -136,40 +147,40 @@ fun SettingsBaseWidget(
 
     val baseShape = LocalSegmentedItemShape.current
 
-    val backgroundColor = run {
-        if (containerColor != null)
-            containerColor
-        else {
-            val color = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest
-            }
-
-            if (renderBackgroundBlur && ThemeConfig.isEnableBlurExp) Color.Transparent else {
-                color.copy(
-                    alpha = CardConfig.cardAlpha
-                )
-            }
-        }
+    val finalContainerColor = (containerColor
+        ?: if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceBright
+        }).run {
+        if (isOnBackground) {
+            copy(
+                alpha = resolvedContainerAlpha
+            )
+        } else this
     }
 
-    val baseContentColor = if (selected) {
+    val backgroundColor = run {
+        if (isOnBackground && themeConfig.isEnableBlurExp)
+            Color.Transparent
+        else finalContainerColor
+    }
+
+    val baseContentColor = if (containerColor != null)
+        MaterialTheme.colorScheme.contentColorFor(containerColor)
+    else if (selected) {
         MaterialTheme.colorScheme.contentColorFor(MaterialTheme.colorScheme.primaryContainer)
     } else {
         MaterialTheme.colorScheme.onSurface
     }
 
     val resolvedIconColor = iconColor
-        ?: if (selected) {
-            baseContentColor
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
+        ?: baseContentColor
 
     val finalDescriptionColor = when {
         isError -> MaterialTheme.colorScheme.error
-        else -> descriptionColor
+        descriptionColor != null -> descriptionColor
+        else -> baseContentColor
     }
 
     /*
@@ -240,10 +251,10 @@ fun SettingsBaseWidget(
     }
 
     var itemModifier = (if (fillMaxWidth) modifier.fillMaxWidth() else modifier)
-    if (renderBackgroundBlur && ThemeConfig.isEnableBlurExp)
+    if (isOnBackground && themeConfig.isEnableBlurExp)
         itemModifier = itemModifier
             .clip(clipShape)
-            .renderBackgroundBlur()
+            .renderBackgroundBlur(finalContainerColor)
 
     val finalLeadingContent: (@Composable () -> Unit)? =
         if (leadingContent == null && icon == null && !iconPlaceholder)
@@ -262,6 +273,7 @@ fun SettingsBaseWidget(
                         if (icon != null) {
                             Icon(
                                 imageVector = icon,
+                                modifier = Modifier.size(iconSize),
                                 contentDescription = null,
                                 tint = resolvedIconColor
                             )
@@ -312,14 +324,18 @@ fun SettingsBaseWidget(
                     bottom = if (description == null && descriptionColumnContent == null) dynamicInternalPadding else 0.dp
                 )
         ) {
-            title?.let {
-                Text(
-                    text = it,
-                    style = titleStyle
-                )
-            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                title?.let {
+                    Text(
+                        text = it,
+                        style = titleStyle,
+                    )
+                }
 
-            foreContent()
+                foreContent()
+            }
         }
     }
 

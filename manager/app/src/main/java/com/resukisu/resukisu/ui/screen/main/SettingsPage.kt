@@ -27,27 +27,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.automirrored.rounded.Article
-import androidx.compose.material.icons.filled.Adb
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Fence
-import androidx.compose.material.icons.filled.FolderOff
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Policy
-import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Update
-import androidx.compose.material.icons.rounded.ElectricalServices
-import androidx.compose.material.icons.rounded.FolderDelete
-import androidx.compose.material.icons.rounded.RemoveCircle
-import androidx.compose.material.icons.rounded.RemoveModerator
+import androidx.compose.material.icons.automirrored.twotone.Article
+import androidx.compose.material.icons.automirrored.twotone.Undo
+import androidx.compose.material.icons.twotone.Adb
+import androidx.compose.material.icons.twotone.BugReport
+import androidx.compose.material.icons.twotone.Delete
+import androidx.compose.material.icons.twotone.DeleteForever
+import androidx.compose.material.icons.twotone.ElectricalServices
+import androidx.compose.material.icons.twotone.Extension
+import androidx.compose.material.icons.twotone.Fence
+import androidx.compose.material.icons.twotone.FolderDelete
+import androidx.compose.material.icons.twotone.FolderOff
+import androidx.compose.material.icons.twotone.Info
+import androidx.compose.material.icons.twotone.Policy
+import androidx.compose.material.icons.twotone.RadioButtonChecked
+import androidx.compose.material.icons.twotone.RadioButtonUnchecked
+import androidx.compose.material.icons.twotone.RemoveCircle
+import androidx.compose.material.icons.twotone.RemoveModerator
+import androidx.compose.material.icons.twotone.Save
+import androidx.compose.material.icons.twotone.Security
+import androidx.compose.material.icons.twotone.Settings
+import androidx.compose.material.icons.twotone.Share
+import androidx.compose.material.icons.twotone.Update
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -81,15 +82,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.resukisu.resukisu.BuildConfig
-import com.resukisu.resukisu.Natives
 import com.resukisu.resukisu.R
-import com.resukisu.resukisu.ksuApp
+import com.resukisu.resukisu.domain.usecase.GenerateBugreportUseCase
 import com.resukisu.resukisu.ui.component.ConfirmResult
 import com.resukisu.resukisu.ui.component.DialogHandle
 import com.resukisu.resukisu.ui.component.SwipeableSnackbarHost
-import com.resukisu.resukisu.ui.component.ksuIsValid
 import com.resukisu.resukisu.ui.component.rememberConfirmDialog
 import com.resukisu.resukisu.ui.component.rememberCustomDialog
 import com.resukisu.resukisu.ui.component.rememberLoadingDialog
@@ -100,17 +98,20 @@ import com.resukisu.resukisu.ui.component.settings.SettingsJumpPageWidget
 import com.resukisu.resukisu.ui.component.settings.SettingsSwitchWidget
 import com.resukisu.resukisu.ui.navigation.LocalNavigator
 import com.resukisu.resukisu.ui.navigation.Route
-import com.resukisu.resukisu.ui.screen.FlashIt
 import com.resukisu.resukisu.ui.theme.CardConfig
 import com.resukisu.resukisu.ui.theme.ThemeConfig
 import com.resukisu.resukisu.ui.theme.blurEffect
 import com.resukisu.resukisu.ui.theme.blurSource
 import com.resukisu.resukisu.ui.util.LocalSnackbarHost
-import com.resukisu.resukisu.ui.util.getBugreportFile
+import com.resukisu.resukisu.ui.util.showReplacingSnackbar
+import com.resukisu.resukisu.ui.viewmodel.HomeViewModel
+import com.resukisu.resukisu.ui.viewmodel.SettingsUiAction
 import com.resukisu.resukisu.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -118,6 +119,7 @@ import java.time.format.DateTimeFormatter
  * @author ShirkNeko
  * @date 2025/9/29.
  */
+
 private val SPACING_MEDIUM = 8.dp
 private val SPACING_LARGE = 16.dp
 
@@ -127,12 +129,14 @@ fun SettingsPage(bottomPadding: Dp) {
     val navigator = LocalNavigator.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = LocalSnackbarHost.current
-    val context = LocalContext.current
-    val settingsViewModel = viewModel<SettingsViewModel>(viewModelStoreOwner = ksuApp)
+    val settingsViewModel = koinViewModel<SettingsViewModel>()
+    val homeViewModel = koinViewModel<HomeViewModel>()
+    val generateBugreport = koinInject<GenerateBugreportUseCase>()
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val homeState by homeViewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        settingsViewModel.loadFeatureSettings(context)
+        settingsViewModel.dispatch(SettingsUiAction.LoadFeatureSettings)
     }
 
     Scaffold(
@@ -161,12 +165,12 @@ fun SettingsPage(bottomPadding: Dp) {
             scope.launch(Dispatchers.IO) {
                 loadingDialog.show()
                 context.contentResolver.openOutputStream(uri)?.use { output ->
-                    getBugreportFile(context).inputStream().use {
+                    generateBugreport().inputStream().use {
                         it.copyTo(output)
                     }
                 }
                 loadingDialog.hide()
-                snackBarHost.showSnackbar(logSaved)
+                snackBarHost.showReplacingSnackbar(logSaved)
             }
         }
 
@@ -183,7 +187,7 @@ fun SettingsPage(bottomPadding: Dp) {
             )
         ) {
             // 配置卡片
-            if (ksuIsValid()) {
+            if (homeState.systemStatus.isValid) {
                 item {
                     val modeItems = listOf(
                         stringResource(id = R.string.settings_mode_default),
@@ -197,7 +201,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             item {
                                 // 配置文件模板入口
                                 SettingsJumpPageWidget(
-                                    icon = Icons.Filled.Fence,
+                                    icon = Icons.TwoTone.Fence,
                                     title = stringResource(R.string.settings_profile_template),
                                     description = stringResource(R.string.settings_profile_template_summary),
                                     onClick = {
@@ -213,14 +217,18 @@ fun SettingsPage(bottomPadding: Dp) {
                                     else -> stringResource(id = R.string.settings_sucompat_summary)
                                 }
                                 SettingsChooseWidget(
-                                    icon = Icons.Rounded.RemoveModerator,
+                                    icon = Icons.TwoTone.RemoveModerator,
                                     title = stringResource(id = R.string.settings_sucompat),
                                     description = suSummary,
                                     items = modeItems,
                                     enabled = uiState.suStatus == "supported",
                                     selectedIndex = uiState.suCompatMode,
                                     onSelectedIndexChange = { index ->
-                                        settingsViewModel.handleSuCompatModeChange(context, index)
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetSuCompatMode(
+                                                index
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -232,25 +240,35 @@ fun SettingsPage(bottomPadding: Dp) {
                                     else -> stringResource(id = R.string.settings_kernel_umount_summary)
                                 }
                                 SettingsSwitchWidget(
-                                    icon = Icons.Rounded.RemoveCircle,
+                                    icon = Icons.TwoTone.RemoveCircle,
                                     title = stringResource(id = R.string.settings_kernel_umount),
                                     description = umountSummary,
                                     enabled = uiState.kernelUmountStatus == "supported",
                                     checked = uiState.isKernelUmountEnabled,
-                                    onCheckedChange = settingsViewModel::handleKernelUmountChange,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetKernelUmount(
+                                                enabled
+                                            )
+                                        )
+                                    },
                                 )
                             }
 
                             item(
-                                visible = Natives.isLateLoadMode
+                                visible = homeState.systemStatus.isLateLoadMode
                             ) {
                                 SettingsSwitchWidget(
-                                    icon = Icons.Rounded.ElectricalServices,
+                                    icon = Icons.TwoTone.ElectricalServices,
                                     title = stringResource(id = R.string.settings_auto_jailbreak),
                                     description = stringResource(id = R.string.settings_auto_jailbreak_summary),
                                     checked = uiState.autoJailbreakEnabled,
                                     onCheckedChange = { value ->
-                                        settingsViewModel.handleAutoJailbreakChange(context, value)
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetAutoJailbreak(
+                                                value
+                                            )
+                                        )
                                     }
                                 )
                             }
@@ -265,12 +283,18 @@ fun SettingsPage(bottomPadding: Dp) {
                                 }
 
                                 SettingsSwitchWidget(
-                                    icon = Icons.Filled.Adb,
+                                    icon = Icons.TwoTone.Adb,
                                     title = stringResource(id = R.string.settings_adb_root),
                                     description = adbRootSummary,
                                     checked = uiState.isAdbRootEnabled,
                                     enabled = uiState.adbRootStatus == "supported",
-                                    onCheckedChange = settingsViewModel::handleAdbRootChange,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetAdbRoot(
+                                                enabled
+                                            )
+                                        )
+                                    },
                                 )
                             }
 
@@ -282,12 +306,14 @@ fun SettingsPage(bottomPadding: Dp) {
                                     else -> stringResource(id = R.string.settings_sulog_summary)
                                 }
                                 SettingsSwitchWidget(
-                                    icon = Icons.AutoMirrored.Rounded.Article,
+                                    icon = Icons.AutoMirrored.TwoTone.Article,
                                     title = stringResource(id = R.string.settings_sulog),
                                     description = sulogSummary,
                                     enabled = uiState.sulogStatus == "supported",
                                     checked = uiState.isSuLogEnabled,
-                                    onCheckedChange = settingsViewModel::handleSuLogChange,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(SettingsUiAction.SetSuLog(enabled))
+                                    },
                                 )
                             }
 
@@ -299,13 +325,17 @@ fun SettingsPage(bottomPadding: Dp) {
                                     else -> stringResource(id = R.string.settings_selinux_hide_summary)
                                 }
                                 SettingsSwitchWidget(
-                                    icon = Icons.Filled.Policy,
+                                    icon = Icons.TwoTone.Policy,
                                     title = stringResource(id = R.string.settings_selinux_hide),
                                     description = selinuxHideSummary,
                                     enabled = uiState.selinuxHideStatus == "supported",
                                     checked = uiState.isSelinuxHideEnabled,
                                     onCheckedChange = { checked ->
-                                        settingsViewModel.handleSelinuxHideChange(context, checked)
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetSelinuxHide(
+                                                checked
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -313,11 +343,17 @@ fun SettingsPage(bottomPadding: Dp) {
                             item {
                                 // 卸载模块开关
                                 SettingsSwitchWidget(
-                                    icon = Icons.Rounded.FolderDelete,
+                                    icon = Icons.TwoTone.FolderDelete,
                                     title = stringResource(id = R.string.settings_umount_modules_default),
                                     description = stringResource(id = R.string.settings_umount_modules_default_summary),
                                     checked = uiState.defaultUmountModules,
-                                    onCheckedChange = settingsViewModel::handleDefaultUmountModulesChange,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetDefaultUmountModules(
+                                                enabled
+                                            )
+                                        )
+                                    },
                                 )
                             }
                         }
@@ -330,15 +366,54 @@ fun SettingsPage(bottomPadding: Dp) {
                 SegmentedColumn(
                     title = stringResource(R.string.app_settings),
                     content = {
+                        expandableItem(
+                            expanded = uiState.checkManagerUpdate,
+                            topContent = {
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.Update,
+                                    title = stringResource(R.string.settings_check_manager_update),
+                                    description = stringResource(R.string.settings_check_manager_update_summary),
+                                    checked = uiState.checkManagerUpdate,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetManagerUpdateCheck(
+                                                enabled
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        ) {
+                            item(
+                                topPadding = 1.dp
+                            ) {
+                                SettingsSwitchWidget(
+                                    title = stringResource(R.string.settings_check_beta_update),
+                                    description = stringResource(R.string.settings_check_beta_update_summary),
+                                    checked = uiState.checkBetaUpdate,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetBetaUpdateCheck(
+                                                enabled
+                                            )
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
                         item {
-                            // 更新检查开�?
                             SettingsSwitchWidget(
-                                icon = Icons.Filled.Update,
-                                title = stringResource(R.string.settings_check_update),
-                                description = stringResource(R.string.settings_check_update_summary),
-                                checked = uiState.checkUpdate,
+                                icon = Icons.TwoTone.Extension,
+                                title = stringResource(R.string.settings_check_module_update),
+                                description = stringResource(R.string.settings_check_module_update_summary),
+                                checked = uiState.checkModuleUpdate,
                                 onCheckedChange = { enabled ->
-                                    settingsViewModel.handleCheckUpdateChange(context, enabled)
+                                    settingsViewModel.dispatch(
+                                        SettingsUiAction.SetModuleUpdateCheck(
+                                            enabled
+                                        )
+                                    )
                                 }
                             )
                         }
@@ -346,7 +421,7 @@ fun SettingsPage(bottomPadding: Dp) {
                         item {
                             // 更多设置
                             SettingsJumpPageWidget(
-                                icon = Icons.Filled.Settings,
+                                icon = Icons.TwoTone.Settings,
                                 title = stringResource(R.string.theme_settings),
                                 description = stringResource(R.string.theme_settings),
                                 onClick = {
@@ -365,7 +440,7 @@ fun SettingsPage(bottomPadding: Dp) {
                     content = {
                         item {
                             SettingsBaseWidget(
-                                icon = Icons.Filled.BugReport,
+                                icon = Icons.TwoTone.BugReport,
                                 title = stringResource(R.string.send_log),
                                 onClick = {
                                     showBottomsheet = true
@@ -373,10 +448,10 @@ fun SettingsPage(bottomPadding: Dp) {
                             ) {}
                         }
 
-                        if (ksuIsValid()) {
+                        if (homeState.systemStatus.isValid) {
                             item {
                                 SettingsJumpPageWidget(
-                                    icon = Icons.Filled.Security,
+                                    icon = Icons.TwoTone.Security,
                                     title = stringResource(R.string.dynamic_manager_title),
                                     description = stringResource(R.string.dynamic_manager_settings_summary),
                                     onClick = {
@@ -387,7 +462,7 @@ fun SettingsPage(bottomPadding: Dp) {
 
                             item(visible = uiState.isKernelUmountEnabled) {
                                 SettingsJumpPageWidget(
-                                    icon = Icons.Filled.FolderOff,
+                                    icon = Icons.TwoTone.FolderOff,
                                     title = stringResource(R.string.umount_path_manager),
                                     description = stringResource(R.string.umount_path_manager_summary),
                                     onClick = {
@@ -397,7 +472,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             }
                         }
 
-                        if (Natives.isLkmMode) {
+                        if (homeState.systemStatus.lkmMode == true) {
                             item {
                                 UninstallItem {
                                     loadingDialog.withLoading(it)
@@ -423,7 +498,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             scope.launch {
                                 val bugreport = loadingDialog.withLoading {
                                     withContext(Dispatchers.IO) {
-                                        getBugreportFile(context)
+                                        generateBugreport()
                                     }
                                 }
 
@@ -460,7 +535,7 @@ fun SettingsPage(bottomPadding: Dp) {
                     content = {
                         item {
                             SettingsJumpPageWidget(
-                                icon = Icons.Filled.Info,
+                                icon = Icons.TwoTone.Info,
                                 title = stringResource(R.string.about),
                                 onClick = {
                                     navigator.push(Route.About)
@@ -483,7 +558,7 @@ private fun LogBottomSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
     ) {
         Row(
             modifier = Modifier
@@ -492,13 +567,13 @@ private fun LogBottomSheet(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             LogActionButton(
-                icon = Icons.Filled.Save,
+                icon = Icons.TwoTone.Save,
                 text = stringResource(R.string.save_log),
                 onClick = onSaveLog
             )
 
             LogActionButton(
-                icon = Icons.Filled.Share,
+                icon = Icons.TwoTone.Share,
                 text = stringResource(R.string.send_log),
                 onClick = onShareLog
             )
@@ -563,8 +638,8 @@ fun UninstallItem(
                 withLoading {
                     when (uninstallType) {
                         UninstallType.TEMPORARY -> showTodo()
-                        UninstallType.PERMANENT -> navigator.push(Route.Flash(FlashIt.FlashUninstall))
-                        UninstallType.RESTORE_STOCK_IMAGE -> navigator.push(Route.Flash(FlashIt.FlashRestore))
+                        UninstallType.PERMANENT -> navigator.push(Route.Flash.uninstall())
+                        UninstallType.RESTORE_STOCK_IMAGE -> navigator.push(Route.Flash.restore())
                         UninstallType.NONE -> Unit
                     }
                 }
@@ -573,7 +648,7 @@ fun UninstallItem(
     }
 
     SettingsJumpPageWidget(
-        icon = Icons.Filled.Delete,
+        icon = Icons.TwoTone.Delete,
         title = stringResource(id = R.string.settings_uninstall),
         onClick = {
             uninstallDialog.show()
@@ -585,19 +660,19 @@ enum class UninstallType(val title: Int, val message: Int, val icon: ImageVector
     TEMPORARY(
         R.string.settings_uninstall_temporary,
         R.string.settings_uninstall_temporary_message,
-        Icons.Filled.Delete
+        Icons.TwoTone.Delete
     ),
     PERMANENT(
         R.string.settings_uninstall_permanent,
         R.string.settings_uninstall_permanent_message,
-        Icons.Filled.DeleteForever
+        Icons.TwoTone.DeleteForever
     ),
     RESTORE_STOCK_IMAGE(
         R.string.settings_restore_stock_image,
         R.string.settings_restore_stock_image_message,
-        Icons.AutoMirrored.Filled.Undo
+        Icons.AutoMirrored.TwoTone.Undo
     ),
-    NONE(0, 0, Icons.Filled.Delete)
+    NONE(0, 0, Icons.TwoTone.Delete)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -675,14 +750,14 @@ fun rememberUninstallDialog(onSelected: (UninstallType) -> Unit): DialogHandle {
                             }
                             if (isSelected) {
                                 Icon(
-                                    imageVector = Icons.Default.RadioButtonChecked,
+                                    imageVector = Icons.TwoTone.RadioButtonChecked,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             } else {
                                 Icon(
-                                    imageVector = Icons.Default.RadioButtonUnchecked,
+                                    imageVector = Icons.TwoTone.RadioButtonUnchecked,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(24.dp)
@@ -727,23 +802,24 @@ fun rememberUninstallDialog(onSelected: (UninstallType) -> Unit): DialogHandle {
 private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
+    val themeConfig: ThemeConfig = koinInject()
+    val cardConfig: CardConfig = koinInject()
     LargeFlexibleTopAppBar(
-        modifier = Modifier.blurEffect(
-        ),
+        modifier = Modifier.blurEffect(),
         title = {
             Text(text = stringResource(R.string.settings))
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor =
-                if (ThemeConfig.isEnableBlur)
+                if (themeConfig.isEnableBlur)
                     Color.Transparent
                 else
-                    MaterialTheme.colorScheme.surfaceContainer.copy(CardConfig.cardAlpha),
+                    MaterialTheme.colorScheme.surfaceContainer.copy(cardConfig.cardAlpha),
             scrolledContainerColor =
-                if (ThemeConfig.isEnableBlur)
+                if (themeConfig.isEnableBlur)
                     Color.Transparent
                 else
-                    MaterialTheme.colorScheme.surfaceContainer.copy(CardConfig.cardAlpha)
+                    MaterialTheme.colorScheme.surfaceContainer.copy(cardConfig.cardAlpha)
         ),
         windowInsets = TopAppBarDefaults.windowInsets.add(WindowInsets(left = 12.dp)),
         scrollBehavior = scrollBehavior
